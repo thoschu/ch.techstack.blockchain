@@ -12,9 +12,7 @@ bitcoin.createNewTransaction(100, 'Tim', 'Andrea');
 bitcoin.createNewTransaction(500, 'Tim', 'Andrea');
 bitcoin.createNewTransaction(1600, 'Tim', 'Andrea');
 
-console.log(bitcoin.pendingTransactions);
-
 bitcoin.createNewBlock( 564551117, 'aaefef-rfhw-ehde-34', 'tz48-305mc-jferf-ddn');
 
-console.log(bitcoin.chain[bitcoin.chain.length - 1]);
-//console.log(bitcoin);
+// console.log(bitcoin.chain[bitcoin.chain.length - 1]);
+console.log(bitcoin);
