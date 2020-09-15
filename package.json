@@ -1,0 +1,24 @@
+{
+  "name": "ch.techstack.blockchain",
+  "version": "1.0.0",
+  "description": "Technischen Grundlagen der Blockchain-Technologie ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thoschu/ch.techstack.blockchain.git"
+  },
+  "keywords": [
+    "blockchain",
+    "node.js",
+    "javascript"
+  ],
+  "author": "Tom S.",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thoschu/ch.techstack.blockchain/issues"
+  },
+  "homepage": "https://github.com/thoschu/ch.techstack.blockchain#readme"
+}
