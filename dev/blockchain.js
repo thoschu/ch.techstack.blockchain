@@ -1,6 +1,22 @@
 function Blockchain1() {
     this.chain = [];
-    this.newTransactions = [];
+    this.pendingTransactions = [];
+}
+
+Blockchain1.prototype.createNewTransaction = function(amount, sender, recipient) {
+    const newTransaction = {
+        amount: amount,
+        sender: sender,
+        recipient: recipient
+    };
+
+    this.pendingTransactions.push(newTransaction);
+
+    return this.getLastBlock()['index'] + 1;
+}
+
+Blockchain1.prototype.getLastBlock = function() {
+    return this.chain[this.chain.length - 1];
 }
 
 Blockchain1.prototype.createNewBlock = function(nonce, previousBlockHash, hash) {
@@ -26,7 +42,7 @@ class Blockchain {
     }
 
     createNewBlock(nonce, previousBlockHash, hash) {
-        const newBlock = this.getBlock(nonce, previousBlockHash, hash);
+        const newBlock = this.getABlock(nonce, previousBlockHash, hash);
 
         this.newTransactions = [];
         this.chain.push(newBlock);
@@ -34,7 +50,7 @@ class Blockchain {
         return newBlock;
     }
 
-    getBlock(nonce, previousBlockHash, hash) {
+    getABlock(nonce, previousBlockHash, hash) {
         const tempBlock = {
             index: this.chain.length + 1,
             timeStamp: Date.now(),
