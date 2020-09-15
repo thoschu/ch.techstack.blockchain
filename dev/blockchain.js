@@ -23,13 +23,13 @@ Blockchain1.prototype.createNewBlock = function(nonce, previousBlockHash, hash) 
     const newBlock = {
         index: this.chain.length + 1,
         timeStamp: Date.now(),
-        transactions: this.newTransactions,
+        transactions: this.pendingTransactions,
         nonce: nonce,
         previousBlockHash: previousBlockHash,
         hash: hash
     };
 
-    this.newTransactions = [];
+    this.pendingTransactions = [];
     this.chain.push(newBlock);
 
     return newBlock;
