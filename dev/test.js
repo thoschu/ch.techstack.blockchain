@@ -2,7 +2,10 @@ const Bc = require('./blockchain');
 
 const bitcoin = new Bc();
 
-bitcoin.createNewBlock(904561652, 'efef-deed-rfhw-ehde-34', '34e-dede8-305mc-jfeerfn');
+let block = bitcoin.createNewBlock(904561652, 'efef-deed-rfhw-ehde-34', '34e-dede8-305mc-jfeerfn');
+let hash = bitcoin.hasBlock(block);
+
+console.log(hash);
 
 bitcoin.createNewTransaction(100, 'Tim', 'Andrea');
 
