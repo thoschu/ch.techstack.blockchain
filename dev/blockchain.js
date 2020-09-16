@@ -5,9 +5,9 @@ function Blockchain() {
     this.pendingTransactions = [];
 }
 
-Blockchain.prototype.hasBlock = function (blockData) {
-    // sha256.
-    return '437890534nr.r.-kf4oirj';
+Blockchain.prototype.hasBlock = function (previousBlockHash, currentBlockData, nonce) {
+    const dataAsString = previousBlockHash + nonce.toString() + JSON.stringify(currentBlockData);
+    return sha256(dataAsString);
 }
 
 Blockchain.prototype.createNewTransaction = function(amount, sender, recipient) {
