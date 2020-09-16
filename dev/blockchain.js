@@ -6,15 +6,17 @@ function Blockchain() {
 }
 
 Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData) {
-    let nonce = 0,
+    let nonce = -1,
         hash = '';
 
     do {
-        hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
         nonce++;
+        hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
     } while (!hash.substring(0, 4).startsWith('0000'));
 
-    return hash;
+    console.log(hash);
+
+    return nonce;
 }
 
 Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce) {

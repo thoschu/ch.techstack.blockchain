@@ -13,13 +13,13 @@ const currentBlockData = [
         amount: 2000,
         sender: 'tom',
         recipient: 'tini'
-
-    },
+    }
 ];
 
-const firstHash = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
+const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
 
-console.log(firstHash);
+console.log(nonce);
+console.log(bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce));
 
 // let block = bitcoin.createNewBlock(904561652, 'efef-deed-rfhw-ehde-34', '34e-dede8-305mc-jfeerfn');
 //
