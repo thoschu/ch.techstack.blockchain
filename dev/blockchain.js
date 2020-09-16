@@ -5,7 +5,19 @@ function Blockchain() {
     this.pendingTransactions = [];
 }
 
-Blockchain.prototype.hasBlock = function (previousBlockHash, currentBlockData, nonce) {
+Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData) {
+    let nonce = 0,
+        hash = '';
+
+    do {
+        hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
+        nonce++;
+    } while (!hash.substring(0, 4).startsWith('0000'));
+
+    return hash;
+}
+
+Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce) {
     const dataAsString = previousBlockHash + nonce.toString() + JSON.stringify(currentBlockData);
     return sha256(dataAsString);
 }
