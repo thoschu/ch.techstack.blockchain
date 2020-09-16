@@ -4,9 +4,9 @@
   "description": "Technischen Grundlagen der Blockchain-Technologie.",
   "main": "index.js",
   "scripts": {
-    "dev": "node dev/test.js",
-    "start": "node dev/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "",
+    "start": "nodemon --watch dev -e js dev/server.js",
+    "test": "node dev/test.js && echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -26,5 +26,8 @@
   "dependencies": {
     "@hapi/hapi": "^20.0.0",
     "sha256": "^0.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
   }
 }

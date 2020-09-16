@@ -2,8 +2,8 @@ const BlockChain = require('./blockchain');
 
 const bitcoin = new BlockChain();
 
-const previousBlockHash = '90343rfndc44000dccc34hzjrjnef948894jrt';
-const currentBlockData = [
+var previousBlockHash = '90343rfndc44000dccc34hzjrjnef948894jrt';
+let currentBlockData = [
     {
         amount: 1000,
         sender: 'me',
