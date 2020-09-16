@@ -34,16 +34,13 @@ const BlockChain = require('./blockchain');
     const bitcoin = new BlockChain();
 
     server.route([
-        // fetch entire blockchain
         {
             method: 'GET',
             path: '/blockchain',
             handler: (request, h) => {
                 return h.response(bitcoin).code(200);
             }
-        },
-        // create a new transaction
-        {
+        }, {
             method: 'POST',
             path: '/transaction',
             handler: (request, h) => {
@@ -51,9 +48,7 @@ const BlockChain = require('./blockchain');
                 console.log('This transaction will be added to block: ' + blockIndex);
                 return blockIndex;
             }
-        },
-        // mine a new block
-        {
+        }, {
             method: 'GET',
             path: '/mine',
             handler: (request, h) => {
@@ -68,8 +63,7 @@ const BlockChain = require('./blockchain');
 
                 return bitcoin.createNewBlock(nonce, previousBlockHash, hash);
             }
-        },
-        {
+        }, {
             method: '*',
             path: '/',
             handler: (request, h) => {
