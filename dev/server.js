@@ -23,6 +23,10 @@
 // }
 
 const Hapi = require('@hapi/hapi');
+const uuid = require('uuid/v4');
+
+const nodeAddress = uuid();
+
 const BlockChain = require('./blockchain');
 
 (async () => {
@@ -54,14 +58,10 @@ const BlockChain = require('./blockchain');
             handler: (request, h) => {
                 const lastBlock = bitcoin.getLastBlock();
                 const previousBlockHash =  lastBlock.hash;
-                const currentBlockData = {
-                    transactions:  bitcoin.pendingTransactions,
-                    index:  bitcoin.pendingTransactions.index + 1
-                };
+                const currentBlockData = bitcoin.currentBlockData();
                 const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
                 const hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
-
-                return bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+                return  h.response(bitcoin.createNewBlock(nonce, previousBlockHash, hash)).code(200);
             }
         }, {
             method: '*',

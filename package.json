@@ -25,7 +25,9 @@
   "homepage": "https://github.com/thoschu/ch.techstack.blockchain#readme",
   "dependencies": {
     "@hapi/hapi": "^20.0.0",
-    "sha256": "^0.2.0"
+    "ramda": "^0.27.1",
+    "sha256": "^0.2.0",
+    "uuid": "^8.3.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"

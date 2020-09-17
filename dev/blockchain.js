@@ -1,23 +1,27 @@
 const sha256 = require('sha256');
+const R = require('ramda');
 
 function Blockchain() {
     this.chain = [];
     this.pendingTransactions = [];
+    this.genesisBlock = this.createNewBlock(undefined, undefined, null);
+}
 
-    const genesisBlock = this.createNewBlock(undefined, undefined, null);
-    console.log(JSON.stringify(genesisBlock));
+Blockchain.prototype.currentBlockData = function () {
+    return {
+        index: R.inc(this.getLastBlock().index) ,
+        transactions: this.pendingTransactions,
+    };
 }
 
 Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData) {
     let nonce = -1,
-        hash = '';
+        hash;
 
     do {
-        nonce++;
+        nonce = R.inc(nonce)
         hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
-    } while (!hash.substring(0, 4).startsWith('0000'));
-
-    console.log(hash);
+    } while (R.not(hash.substring(0, 4).startsWith('0000')));
 
     return nonce;
 }
@@ -40,7 +44,8 @@ Blockchain.prototype.createNewTransaction = function(amount, sender, recipient) 
 }
 
 Blockchain.prototype.getLastBlock = function() {
-    return this.chain[this.chain.length - 1];
+    // return this.chain[this.chain.length - 1];
+    return R.last(this.chain);
 }
 
 Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash) {
@@ -59,7 +64,7 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash) {
     return newBlock;
 }
 
-// class Blockchain {
+// export class Blockchain {
 //     constructor() {
 //         this.chain = [];
 //         this.newTransactions = [];
