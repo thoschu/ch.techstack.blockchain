@@ -30,7 +30,7 @@ if (cluster.isMaster) {
     (async () => {
         const server = Hapi.server({
             port: port,
-            host: '0.0.0.0'
+            host: 'localhost'
         });
 
         const bitcoin = new BlockChain(server.info.uri);
@@ -68,9 +68,8 @@ if (cluster.isMaster) {
                     const newNodeUrl = request.payload.newNodeUrl;
 
                     if (!bitcoin.networkNodes.includes(newNodeUrl)) {
-                        console.log('TRUE');
-                        console.log('FALSE');
                         const fetchNodesPromisesArr = [];
+
                         bitcoin.networkNodes.push(newNodeUrl);
                         bitcoin.networkNodes.forEach((networkNodeUrl) => {
                             const address = `${networkNodeUrl}/register-node`;
@@ -82,6 +81,7 @@ if (cluster.isMaster) {
                         });
 
                         await Promise.all(fetchNodesPromisesArr).then(async res => {
+                            console.dir(res);
                             return await fetch(newNodeUrl + '/register-nodes-bulk', {
                                 allNetworkNodes: [...bitcoin.networkNodes, bitcoin.currentNodeUrl]
                             })
@@ -89,23 +89,39 @@ if (cluster.isMaster) {
                             console.log(res);
                             return h.response('SUCCESS').code(200);
                         });
-
-
                     }
-
-
                 }
             }, {
                 method: 'POST',
                 path: '/register-node',
                 handler: (request, h) => {
+                    let returnText, returnStatusCode;
                     const newNodeUrl = request.payload.newNodeUrl;
+
+                    if (!bitcoin.networkNodes.includes(newNodeUrl) && bitcoin.currentNodeUrl !== newNodeUrl) {
+                        bitcoin.networkNodes.push(newNodeUrl);
+                        returnText = 'New node registered successfully.';
+                        returnStatusCode = 200;
+                    } else {
+                        returnText = 'Node not registered successfully.';
+                        returnStatusCode = 409;
+                    }
+
+                    return h.response({info: returnText, code: returnStatusCode}).code(returnStatusCode);
                 }
             }, {
                 method: 'POST',
                 path: '/register-nodes-bulk',
                 handler: (request, h) => {
-                    const newNodeUrl = request.payload.newNodeUrl;
+                    const allNetworkNodes = request.payload.allNetworkNodes;
+
+                    allNetworkNodes.forEach(networkNodeUrl => {
+                        if (!bitcoin.networkNodes.includes(networkNodeUrl) && bitcoin.currentNodeUrl !== networkNodeUrl) {
+                            bitcoin.networkNodes.push(networkNodeUrl);
+                        }
+                    });
+
+                    return h.response({info: 'Bulk registration successful.', code: '200'}).code(200);
                 }
             }, {
                 method: '*',
