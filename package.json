@@ -4,8 +4,8 @@
   "description": "Technischen Grundlagen der Blockchain-Technologie.",
   "main": "index.js",
   "scripts": {
-    "dev": "",
-    "start": "nodemon --watch dev -e js dev/server.js",
+    "dev": "nodemon --watch dev -e js dev/server.js",
+    "start": "concurrently ''",
     "test": "node dev/test.js && echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -25,6 +25,7 @@
   "homepage": "https://github.com/thoschu/ch.techstack.blockchain#readme",
   "dependencies": {
     "@hapi/hapi": "^20.0.0",
+    "node-fetch": "^2.6.1",
     "ramda": "^0.27.1",
     "sha256": "^0.2.0",
     "uuid": "^8.3.0"

@@ -1,10 +1,14 @@
 const sha256 = require('sha256');
 const R = require('ramda');
 
-function Blockchain() {
+function Blockchain(currentNodeUrl) {
+    this.currentNodeUrl = currentNodeUrl;
+    this.networkNodes = [];
+
     this.chain = [];
     this.pendingTransactions = [];
-    this.genesisBlock = this.createNewBlock(undefined, undefined, null);
+
+    this.createNewBlock(undefined, null, '0');
 }
 
 Blockchain.prototype.currentBlockData = function () {
