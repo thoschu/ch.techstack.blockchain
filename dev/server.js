@@ -74,64 +74,67 @@ if (cluster.isMaster) {
                 handler: async (request, h) => {
                     const newNodeUrl = request.payload.newNodeUrl;
 
-                    if (R.not(bitcoin.networkNodes.includes(newNodeUrl))) {
+                    console.log(`register-and-broadcast-node on ${bitcoin.currentNodeUrl} - newNodeUrl: ${newNodeUrl}`);
+
+                    if (!bitcoin.networkNodes.includes(newNodeUrl) && bitcoin.currentNodeUrl !== newNodeUrl) {
                         const fetchNodesPromisesArr = [];
 
                         bitcoin.networkNodes.push(newNodeUrl);
-                        bitcoin.networkNodes.forEach((networkNodeUrl) => {
-                            const registerNodeAddress = `${networkNodeUrl}/register-node`;
 
-                            fetchNodesPromisesArr.push(fetch(registerNodeAddress, {
+                        bitcoin.networkNodes.forEach((networkNodeUrl) => {
+                            fetchNodesPromisesArr.push(fetch(`${networkNodeUrl}/register-node`, {
                                 method: 'POST',
-                                body: {newNodeUrl: newNodeUrl}
+                                body: JSON.stringify({newNodeUrl: newNodeUrl})
                             }));
                         });
 
-                        await Promise.all(fetchNodesPromisesArr).then(async res => {
-                            const registerNodesBulkAddress = `${newNodeUrl}/register-nodes-bulk`;
+                        return await Promise.all(fetchNodesPromisesArr).then(async (res) => {
+                            const allNetworkNodes = [bitcoin.currentNodeUrl, ...bitcoin.networkNodes];
 
-                            console.dir(res);
-
-                            return await fetch(registerNodesBulkAddress, {
-                                allNetworkNodes: [...bitcoin.networkNodes, bitcoin.currentNodeUrl]
-                            })
-                        }).then(res => {
-                            console.log(res);
+                            return await fetch(`${newNodeUrl}/register-nodes-bulk`, {
+                                method: 'POST',
+                                body: JSON.stringify({allNetworkNodes: allNetworkNodes})
+                            });
+                        }).then((res) => {
                             return h.response('SUCCESS').code(200);
                         });
+                    } else {
+                        return h.response('FAILURE').code(409);
                     }
                 }
             }, {
                 method: 'POST',
                 path: '/register-node',
                 handler: (request, h) => {
-                    let returnText, returnStatusCode;
-                    const newNodeUrl = request.payload.newNodeUrl;
+                    const payload = JSON.parse(request.payload);
+                    const newNodeUrl = payload.newNodeUrl;
 
                     if (!bitcoin.networkNodes.includes(newNodeUrl) && bitcoin.currentNodeUrl !== newNodeUrl) {
                         bitcoin.networkNodes.push(newNodeUrl);
-                        returnText = 'New node registered successfully.';
-                        returnStatusCode = 200;
+                        console.log(`register-node on ${bitcoin.currentNodeUrl} - added newNodeUrl: ${newNodeUrl}`);
                     } else {
-                        returnText = 'Node not registered successfully.';
-                        returnStatusCode = 409;
+                        console.log(`register-node on ${bitcoin.currentNodeUrl} - skipped newNodeUrl: ${newNodeUrl}`);
                     }
 
-                    return h.response({info: returnText, code: returnStatusCode}).code(returnStatusCode);
+                    return h.response({info: 'New node registered successfully.'}).code(200);
                 }
             }, {
                 method: 'POST',
                 path: '/register-nodes-bulk',
                 handler: (request, h) => {
-                    const allNetworkNodes = request.payload.allNetworkNodes;
+                    const payload = JSON.parse(request.payload);
+                    const allNetworkNodes = payload.allNetworkNodes;
 
                     allNetworkNodes.forEach(networkNodeUrl => {
                         if (!bitcoin.networkNodes.includes(networkNodeUrl) && bitcoin.currentNodeUrl !== networkNodeUrl) {
                             bitcoin.networkNodes.push(networkNodeUrl);
+                            console.log(`register-nodes-bulk on ${bitcoin.currentNodeUrl} - added networkNodeUrl: ${networkNodeUrl}`);
+                        } else {
+                            console.log(`register-nodes-bulk on ${bitcoin.currentNodeUrl} - skipped networkNodeUrl: ${networkNodeUrl}`);
                         }
                     });
 
-                    return h.response({info: 'Bulk registration successful.', code: '200'}).code(200);
+                    return h.response({info: 'Bulk registration successful.'}).code(200);
                 }
             }, {
                 method: '*',
@@ -141,6 +144,10 @@ if (cluster.isMaster) {
                 }
             }
         ]);
+
+        const ckeckNodeUrl = (tempNodeUrl) => {
+            return !bitcoin.networkNodes.includes(tempNodeUrl) && bitcoin.currentNodeUrl !== tempNodeUrl;
+        };
 
         await server.start();
 
