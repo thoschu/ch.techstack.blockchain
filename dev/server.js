@@ -47,22 +47,16 @@ if (cluster.isMaster) {
                 path: '/transaction',
                 handler: (request, h) => {
                     const payload = request.payload;
-                    const amount = payload.amount;
-                    const sender = payload.sender;
-                    const recipient = payload.recipient;
-                    const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
+                    const newTransaction = JSON.parse(payload);
+                    const blockIndex = bitcoin.addTransactionToPendingTransaction(newTransaction);
 
-
-                    console.log(newTransaction);
-
-                    // console.log('This transaction will be added to block: ' + newTransaction);
-
-                    return h.response(newTransaction).code(200);
+                    return h.response({note: `Transaction will be added in block ${blockIndex}.`}).code(200);
                 }
             }, {
                 method: 'POST',
                 path: '/transaction/broadcast',
-                handler: (request, h) => {
+                handler: async (request, h) => {
+                    const fetchPromises = [];
                     const payload = request.payload;
                     const amount = payload.amount;
                     const sender = payload.sender;
@@ -71,11 +65,18 @@ if (cluster.isMaster) {
 
                     bitcoin.addTransactionToPendingTransaction(newTransaction);
 
-                    bitcoin.networkNodes.forEach()
+                    bitcoin.networkNodes.forEach(networkNodeUrl => {
+                        fetchPromises.push(fetch(`${networkNodeUrl}/transaction`, {
+                            method: 'POST',
+                            body: JSON.stringify(newTransaction)
+                        }));
+                    });
 
-                    console.log('This transaction will be added to block: ' + newTransaction);
+                    return await Promise.all(fetchPromises).then(res => {
+                        console.log('Transaction created and broadcast successfully.');
 
-                    return h.response(newTransaction).code(200);
+                        return h.response(res).code(200);
+                    });
                 }
             }, {
                 method: 'GET',

@@ -9,7 +9,7 @@ function Blockchain(currentNodeUrl) {
     this.chain = [];
     this.pendingTransactions = [];
 
-    this.createNewBlock(undefined, null, '0');
+    this.createNewBlock('genesis', null, '0');
 }
 
 Blockchain.prototype.currentBlockData = function () {
@@ -24,7 +24,7 @@ Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData
         hash;
 
     do {
-        nonce = R.inc(nonce)
+        nonce = R.inc(nonce);
         hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
     } while (R.not(hash.substring(0, 4).startsWith('0000')));
 
