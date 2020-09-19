@@ -50,11 +50,32 @@ if (cluster.isMaster) {
                     const amount = payload.amount;
                     const sender = payload.sender;
                     const recipient = payload.recipient;
-                    const blockIndex = bitcoin.createNewTransaction(amount, sender, recipient);
+                    const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
 
-                    console.log('This transaction will be added to block: ' + blockIndex);
 
-                    return h.response(blockIndex).code(200);
+                    console.log(newTransaction);
+
+                    // console.log('This transaction will be added to block: ' + newTransaction);
+
+                    return h.response(newTransaction).code(200);
+                }
+            }, {
+                method: 'POST',
+                path: '/transaction/broadcast',
+                handler: (request, h) => {
+                    const payload = request.payload;
+                    const amount = payload.amount;
+                    const sender = payload.sender;
+                    const recipient = payload.recipient;
+                    const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
+
+                    bitcoin.addTransactionToPendingTransaction(newTransaction);
+
+                    bitcoin.networkNodes.forEach()
+
+                    console.log('This transaction will be added to block: ' + newTransaction);
+
+                    return h.response(newTransaction).code(200);
                 }
             }, {
                 method: 'GET',

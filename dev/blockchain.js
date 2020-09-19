@@ -1,5 +1,6 @@
 const sha256 = require('sha256');
 const R = require('ramda');
+const { v4: uuidv4 } = require('uuid');
 
 function Blockchain(currentNodeUrl) {
     this.currentNodeUrl = currentNodeUrl;
@@ -37,11 +38,17 @@ Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, 
 
 Blockchain.prototype.createNewTransaction = function(amount, sender, recipient) {
     const newTransaction = {
-        amount: amount,
-        sender: sender,
-        recipient: recipient
+        transactionId: uuidv4()
     };
 
+    newTransaction.amount = amount;
+    newTransaction.sender = sender;
+    newTransaction.recipient = recipient;
+
+    return newTransaction;
+}
+
+Blockchain.prototype.addTransactionToPendingTransaction = function(newTransaction) {
     this.pendingTransactions.push(newTransaction);
 
     return this.getLastBlock()['index'] + 1;
