@@ -23,7 +23,7 @@ if (cluster.isMaster) {
         console.log(`worker ${worker.process.pid} died`);
     });
 } else {
-    const port = 300 + R.takeLast(1, `${process.pid}`);
+    const port = `300${R.takeLast(1, `${process.pid}`)}`;
 
     console.log(`# Worker ${process.pid} started. ${port}`);
 
@@ -46,8 +46,14 @@ if (cluster.isMaster) {
                 method: 'POST',
                 path: '/transaction',
                 handler: (request, h) => {
-                    const blockIndex = bitcoin.createNewTransaction(request.payload.amount, request.payload.sender, request.payload.recipient);
+                    const payload = request.payload;
+                    const amount = payload.amount;
+                    const sender = payload.sender;
+                    const recipient = payload.recipient;
+                    const blockIndex = bitcoin.createNewTransaction(amount, sender, recipient);
+
                     console.log('This transaction will be added to block: ' + blockIndex);
+
                     return h.response(blockIndex).code(200);
                 }
             }, {
@@ -59,7 +65,8 @@ if (cluster.isMaster) {
                     const currentBlockData = bitcoin.currentBlockData();
                     const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
                     const hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
-                    return h.response(bitcoin.createNewBlock(nonce, previousBlockHash, hash)).code(200);
+                    const newBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+                    return h.response(newBlock).code(200);
                 }
             }, {
                 method: 'POST',
@@ -67,22 +74,25 @@ if (cluster.isMaster) {
                 handler: async (request, h) => {
                     const newNodeUrl = request.payload.newNodeUrl;
 
-                    if (!bitcoin.networkNodes.includes(newNodeUrl)) {
+                    if (R.not(bitcoin.networkNodes.includes(newNodeUrl))) {
                         const fetchNodesPromisesArr = [];
 
                         bitcoin.networkNodes.push(newNodeUrl);
                         bitcoin.networkNodes.forEach((networkNodeUrl) => {
-                            const address = `${networkNodeUrl}/register-node`;
+                            const registerNodeAddress = `${networkNodeUrl}/register-node`;
 
-                            fetchNodesPromisesArr.push(fetch(address, {
+                            fetchNodesPromisesArr.push(fetch(registerNodeAddress, {
                                 method: 'POST',
                                 body: {newNodeUrl: newNodeUrl}
                             }));
                         });
 
                         await Promise.all(fetchNodesPromisesArr).then(async res => {
+                            const registerNodesBulkAddress = `${newNodeUrl}/register-nodes-bulk`;
+
                             console.dir(res);
-                            return await fetch(newNodeUrl + '/register-nodes-bulk', {
+
+                            return await fetch(registerNodesBulkAddress, {
                                 allNetworkNodes: [...bitcoin.networkNodes, bitcoin.currentNodeUrl]
                             })
                         }).then(res => {
@@ -127,7 +137,7 @@ if (cluster.isMaster) {
                 method: '*',
                 path: '/',
                 handler: (request, h) => {
-                    return h.response(h.response.statusCode = 404).code(404);
+                    return h.redirect('/blockchain').code(309);
                 }
             }
         ]);
