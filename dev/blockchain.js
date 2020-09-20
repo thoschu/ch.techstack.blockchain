@@ -9,7 +9,7 @@ function Blockchain(currentNodeUrl) {
     this.chain = [];
     this.pendingTransactions = [];
 
-    this.createNewBlock('genesis', null, '0');
+    console.info(`Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${bitcoin.currentNodeUrl}`);
 }
 
 Blockchain.prototype.currentBlockData = function () {

@@ -34,6 +34,7 @@ if (cluster.isMaster) {
         });
 
         const bitcoin = new BlockChain(server.info.uri);
+        const nodeAddress = uuidv4();
 
         server.route([
             {
@@ -68,7 +69,7 @@ if (cluster.isMaster) {
                     bitcoin.networkNodes.forEach(networkNodeUrl => {
                         fetchPromises.push(fetch(`${networkNodeUrl}/transaction`, {
                             method: 'POST',
-                            body: JSON.stringify(newTransaction)
+                            body: newTransaction
                         }));
                     });
 
@@ -88,7 +89,54 @@ if (cluster.isMaster) {
                     const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
                     const hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
                     const newBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
-                    return h.response(newBlock).code(200);
+                    const fetchNodesPromisesArr = [];
+
+                    bitcoin.networkNodes.forEach((networkNodeUrl) => {
+                        fetchNodesPromisesArr.push(fetch(`${networkNodeUrl}/receive-new-block`, {
+                            method: 'POST',
+                            body: JSON.stringify(newBlock)
+                        }));
+                    });
+
+                    return Promise.all(fetchNodesPromisesArr).then(res => {
+                        const newTransaction = {
+                            amount: 12.5,
+                            sender: "00",
+                            recipient: nodeAddress
+                        };
+
+                        return fetch(`${bitcoin.currentNodeUrl}/transaction/broadcast`, {
+                            method: 'POST',
+                            body: JSON.stringify(newTransaction)
+                        });
+
+                    }).then(res => {
+                        // console.dir(res);
+
+                        return h.response({note: 'New block mined & broadcast successfully.', block: newBlock}).code(200);
+                    });
+                }
+            }, {
+                method: 'POST',
+                path: '/receive-new-block',
+                handler: (request, h) => {
+                    let note, statusCode;
+                    const newBlock = JSON.parse(request.payload);
+                    const lastBock = bitcoin.getLastBlock();
+                    const correctHash = lastBock.hash === newBlock.previousBlockHash;
+                    const correctIndex = lastBock.index + 1 === newBlock.index;
+
+                    if (correctHash && correctIndex) {
+                        bitcoin.chain.push(newBlock);
+                        bitcoin.pendingTransactions = [];
+                        note = 'New Block received and accepted.';
+                        statusCode = 201;
+                    } else {
+                        note = 'New Block received but not accepted.';
+                        statusCode = 404;
+                    }
+
+                    return h.response({note, newBlock}).code(statusCode);
                 }
             }, {
                 method: 'POST',
