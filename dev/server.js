@@ -215,10 +215,6 @@ if (cluster.isMaster) {
             }
         ]);
 
-        const ckeckNodeUrl = (tempNodeUrl) => {
-            return !bitcoin.networkNodes.includes(tempNodeUrl) && bitcoin.currentNodeUrl !== tempNodeUrl;
-        };
-
         await server.start();
 
         console.log('Server running on %s', server.info.uri);
