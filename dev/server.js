@@ -33,8 +33,8 @@ if (cluster.isMaster) {
             host: 'localhost'
         });
 
-        const bitcoin = new BlockChain(server.info.uri);
         const nodeAddress = uuidv4();
+        const bitcoin = new BlockChain(server.info.uri, nodeAddress);
 
         server.route([
             {
@@ -47,8 +47,7 @@ if (cluster.isMaster) {
                 method: 'POST',
                 path: '/transaction',
                 handler: (request, h) => {
-                    const payload = request.payload;
-                    const newTransaction = JSON.parse(payload);
+                    const newTransaction = request.payload;
                     const blockIndex = bitcoin.addTransactionToPendingTransaction(newTransaction);
 
                     return h.response({note: `Transaction will be added in block ${blockIndex}.`}).code(200);
@@ -69,7 +68,8 @@ if (cluster.isMaster) {
                     bitcoin.networkNodes.forEach(networkNodeUrl => {
                         fetchPromises.push(fetch(`${networkNodeUrl}/transaction`, {
                             method: 'POST',
-                            body: newTransaction
+                            body: JSON.stringify(newTransaction),
+                            headers: {'Content-Type': 'application/json'}
                         }));
                     });
 
@@ -94,7 +94,8 @@ if (cluster.isMaster) {
                     bitcoin.networkNodes.forEach((networkNodeUrl) => {
                         fetchNodesPromisesArr.push(fetch(`${networkNodeUrl}/receive-new-block`, {
                             method: 'POST',
-                            body: JSON.stringify(newBlock)
+                            body: JSON.stringify(newBlock),
+                            headers: {'Content-Type': 'application/json'}
                         }));
                     });
 
@@ -107,7 +108,8 @@ if (cluster.isMaster) {
 
                         return fetch(`${bitcoin.currentNodeUrl}/transaction/broadcast`, {
                             method: 'POST',
-                            body: JSON.stringify(newTransaction)
+                            body: JSON.stringify(newTransaction),
+                            headers: {'Content-Type': 'application/json'}
                         });
 
                     }).then(res => {
@@ -121,7 +123,7 @@ if (cluster.isMaster) {
                 path: '/receive-new-block',
                 handler: (request, h) => {
                     let note, statusCode;
-                    const newBlock = JSON.parse(request.payload);
+                    const newBlock = request.payload;
                     const lastBock = bitcoin.getLastBlock();
                     const correctHash = lastBock.hash === newBlock.previousBlockHash;
                     const correctIndex = lastBock.index + 1 === newBlock.index;
@@ -154,7 +156,8 @@ if (cluster.isMaster) {
                         bitcoin.networkNodes.forEach((networkNodeUrl) => {
                             fetchNodesPromisesArr.push(fetch(`${networkNodeUrl}/register-node`, {
                                 method: 'POST',
-                                body: JSON.stringify({newNodeUrl: newNodeUrl})
+                                body: JSON.stringify({newNodeUrl: newNodeUrl}),
+                                headers: {'Content-Type': 'application/json'}
                             }));
                         });
 
@@ -163,7 +166,8 @@ if (cluster.isMaster) {
 
                             return await fetch(`${newNodeUrl}/register-nodes-bulk`, {
                                 method: 'POST',
-                                body: JSON.stringify({allNetworkNodes: allNetworkNodes})
+                                body: JSON.stringify({allNetworkNodes: allNetworkNodes}),
+                                headers: {'Content-Type': 'application/json'}
                             });
                         }).then((res) => {
                             return h.response('SUCCESS').code(200);
@@ -176,7 +180,7 @@ if (cluster.isMaster) {
                 method: 'POST',
                 path: '/register-node',
                 handler: (request, h) => {
-                    const payload = JSON.parse(request.payload);
+                    const payload = request.payload;
                     const newNodeUrl = payload.newNodeUrl;
 
                     if (!bitcoin.networkNodes.includes(newNodeUrl) && bitcoin.currentNodeUrl !== newNodeUrl) {
@@ -192,7 +196,7 @@ if (cluster.isMaster) {
                 method: 'POST',
                 path: '/register-nodes-bulk',
                 handler: (request, h) => {
-                    const payload = JSON.parse(request.payload);
+                    const payload = request.payload;
                     const allNetworkNodes = payload.allNetworkNodes;
 
                     allNetworkNodes.forEach(networkNodeUrl => {

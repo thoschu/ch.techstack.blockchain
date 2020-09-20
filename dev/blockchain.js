@@ -2,14 +2,46 @@ const sha256 = require('sha256');
 const R = require('ramda');
 const { v4: uuidv4 } = require('uuid');
 
-function Blockchain(currentNodeUrl) {
+function Blockchain(currentNodeUrl, nodeIdentifier) {
+    this.nodeIdentifier = nodeIdentifier.replace(/\D/g, '');
     this.currentNodeUrl = currentNodeUrl;
     this.networkNodes = [];
 
     this.chain = [];
     this.pendingTransactions = [];
 
-    console.info(`Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${bitcoin.currentNodeUrl}`);
+    console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(this.nodeIdentifier, null, '0'))} on ${this.currentNodeUrl}`);
+}
+
+Blockchain.prototype.isChainValid = function (blockchain) {
+    let validChain = true;
+    const genesisBlock = blockchain[0];
+    const correctNonce = genesisBlock.nonce === this.nodeIdentifier;
+    const correctPreviousBlockHash = genesisBlock.previousBlockHash === null;
+    const correctHash = genesisBlock.hash === '0';
+    const correctTransactions = genesisBlock.transactions.length === 0;
+    const noValidGenesisBlock = !correctNonce || !correctPreviousBlockHash || !correctHash || !correctTransactions;
+
+    for (let i = 1; i < blockchain.length; i++) {
+        const currentBlock = blockchain[i];
+        const previousBlock = blockchain[i - 1];
+        const tempBlockData = {
+            index: currentBlock.index,
+            transactions: currentBlock.transactions
+        };
+        const blockHash = this.hashBlock(previousBlock.hash, tempBlockData, currentBlock.nonce);
+
+        console.log('previousBlock.hash ->', previousBlock.hash);
+        console.log('currentBlock.hash ->', currentBlock.hash);
+
+        if ((!blockHash.substring(0, 4).startsWith('0000')) && currentBlock.previousBlockHash !== previousBlock.hash) {
+            console.log('####');
+            validChain = false;
+            break;
+        }
+    }
+
+    return validChain && !noValidGenesisBlock;
 }
 
 Blockchain.prototype.currentBlockData = function () {
