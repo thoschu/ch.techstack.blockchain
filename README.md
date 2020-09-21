@@ -102,3 +102,9 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash);
     path: '/register-nodes-bulk'
 }
 ```
+
+![Network](./assets/blockchain-network-flow.png "Network")
+
+![Transaction](./assets/blockchain-transaction-flow.png "Transaction")
+
+![Mine](./assets/blockchain-mine-flow.png "Mine")
