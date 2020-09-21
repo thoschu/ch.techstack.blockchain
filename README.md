@@ -9,6 +9,10 @@ function Blockchain(currentNodeUrl, nodeIdentifier);
 ```
 
 ```javascript
+Blockchain.prototype.consensus = function ();
+```
+
+```javascript
 Blockchain.prototype.isChainValid = function (blockchain);
 ```
 
