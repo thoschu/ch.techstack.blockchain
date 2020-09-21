@@ -44,6 +44,14 @@ if (cluster.isMaster) {
                     return h.response(bitcoin).code(200);
                 }
             }, {
+                method: 'GET',
+                path: '/blockchain/hash',
+                handler: async (request, h) => {
+                    return await fetch(`${bitcoin.currentNodeUrl}/blockchain`)
+                        .then(res => res.text())
+                        .then(body => h.response(bitcoin.hash(body)).code(200));
+                }
+            }, {
                 method: 'POST',
                 path: '/transaction',
                 handler: (request, h) => {
@@ -217,41 +225,45 @@ if (cluster.isMaster) {
                     const fetchPromises = [];
 
                     bitcoin.networkNodes.forEach((networkNodeUrl) => {
-                        fetchPromises.push(fetch(`${networkNodeUrl}/blockchain`).then(blockChain => blockChain.json()));
+                        console.log(bitcoin.currentNodeUrl);
+                        console.log(networkNodeUrl);
+                        fetchPromises.push(
+                            fetch(`${networkNodeUrl}/blockchain`)
+                                .then(blockChain => blockChain.json())
+                        );
                     });
 
-                    return Promise.all(fetchPromises).then(blockChainsArr => {
-                        const currentChainLength = bitcoin.chain.length;
-                        let isChainValid, note, chain;
-                        let maxChainLength = currentChainLength;
-                        let newLongestChain = null;
-                        let newPendingTransactions = null;
+                    return Promise.all(fetchPromises)
+                        .then(blockchains => {
+                            const currentChainLength = bitcoin.chain.length;
+                            let maxChainLength = currentChainLength;
+                            let newLongestChain = null;
+                            let newPendingTransactions = null;
+                            let note, chain;
 
-                        blockChainsArr.forEach(blockChain => {
-                            const tempCurrentChain = blockChain.chain;
-                            const tempCurrentChainLength = tempCurrentChain.length;
+                            blockchains.forEach(blockchain => {
+                                if (blockchain.chain.length > maxChainLength) {
+                                    maxChainLength = blockchain.chain.length;
+                                    newLongestChain = blockchain.chain;
+                                    newPendingTransactions = blockchain.pendingTransactions;
+                                }
+                            });
 
-                            if (tempCurrentChainLength > maxChainLength) {
-                                maxChainLength = tempCurrentChainLength;
-                                newLongestChain = tempCurrentChain;
-                                newPendingTransactions = blockChain.pendingTransactions;
+                            if (R.isNil(newLongestChain) || (newLongestChain && R.not(bitcoin.isChainValid(newLongestChain)))) {
+                                note = `Current chain on ${bitcoin.currentNodeUrl} has not been replaced.`;
+                                chain = bitcoin.chain;
+                            } else if (newLongestChain && bitcoin.isChainValid(newLongestChain)) {
+                                bitcoin.chain = newLongestChain;
+                                bitcoin.pendingTransactions = newPendingTransactions;
+
+                                note = `This chain on ${bitcoin.currentNodeUrl} has been replaced.`;
+                                chain = newLongestChain;
+                            } else {
+                                throw Error('Consensus-Error');
                             }
+
+                            return h.response({note, chain}).code(200);
                         });
-
-                        isChainValid = bitcoin.isChainValid(newLongestChain);
-
-                        if (!newLongestChain || (newLongestChain && !isChainValid)) {
-                            note = 'Current chain has not been replaced.';
-                            chain = bitcoin.chain;
-                        } else {
-                            bitcoin.chain = newLongestChain;
-                            bitcoin.pendingTransactions = newPendingTransactions;
-                            note = 'This chain has been replaced.';
-                            chain = newLongestChain;
-                        }
-
-                        return h.response({note, chain}).code(200);
-                    });
                 }
             }, {
                 method: '*',
@@ -264,7 +276,7 @@ if (cluster.isMaster) {
 
         await server.start();
 
-        console.log('Server running on %s', server.info.uri);
+        console.log('Server running on %s with id: %s', server.info.uri, nodeAddress);
     })();
 
     process.on('unhandledRejection', (err) => {
