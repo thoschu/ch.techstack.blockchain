@@ -236,30 +236,22 @@ if (cluster.isMaster) {
                     return Promise.all(fetchPromises)
                         .then(blockchains => {
                             const currentChainLength = bitcoin.chain.length;
-                            console.log('-----------------------', currentChainLength);
                             let maxChainLength = currentChainLength;
                             let newLongestChain = null;
                             let newPendingTransactions = null;
-
                             let note, chain;
 
                             blockchains.forEach(blockchain => {
                                 if (blockchain.chain.length > maxChainLength) {
-                                    console.log('xxxxxx');
                                     maxChainLength = blockchain.chain.length;
                                     newLongestChain = blockchain.chain;
                                     newPendingTransactions = blockchain.pendingTransactions;
                                 }
                             });
 
-                            console.log('iiiiiiiiiiiiiiiiii');
-                            console.log(newLongestChain);
-                            console.log('iiiiiiiiiiiiiiiiii');
-
-                            if (!newLongestChain || (newLongestChain && !bitcoin.isChainValid(newLongestChain))) {
+                            if (R.isNil(newLongestChain) || (newLongestChain && R.not(bitcoin.isChainValid(newLongestChain)))) {
                                 note = `Current chain on ${bitcoin.currentNodeUrl} has not been replaced.`;
                                 chain = bitcoin.chain;
-                                console.log(bitcoin.isChainValid(newLongestChain));
                             } else if (newLongestChain && bitcoin.isChainValid(newLongestChain)) {
                                 bitcoin.chain = newLongestChain;
                                 bitcoin.pendingTransactions = newPendingTransactions;
@@ -284,7 +276,7 @@ if (cluster.isMaster) {
 
         await server.start();
 
-        console.log('Server running on %s', server.info.uri);
+        console.log('Server running on %s with id: %s', server.info.uri, nodeAddress);
     })();
 
     process.on('unhandledRejection', (err) => {
