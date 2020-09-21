@@ -2,7 +2,7 @@
 
 ⚠️ UNDER CONSTRUCTION ⚠️
 
-Software made with ![HEART](https://www.thomas-schulte.de/images/made_with_love.gif "HEART") in Germany
+Software made with <img src="https://www.thomas-schulte.de/images/made_with_love.gif" width="32" height="32"> in Germany
 
 ## blockchain.js
 
