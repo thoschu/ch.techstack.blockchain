@@ -113,4 +113,4 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash);
 
 #
 
-Software made with <img src="https://www.thomas-schulte.de/images/made_with_love.gif" width="32" height="32"> in Germany
+Software made with <img src="https://www.thomas-schulte.de/images/made_with_love.gif" width="32" height="32"> in Germany.

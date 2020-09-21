@@ -1,3 +1,5 @@
+'use strict';
+
 const { v4: uuidv4 } = require('uuid');
 const BlockChain = require('./blockchain');
 
@@ -14,7 +16,7 @@ const testBlockChain = {
             "index": 1,
             "timeStamp": 1600629700409,
             "transactions": [],
-            "nonce": "1236",
+            "nonce": undefined,
             "previousBlockHash": null,
             "hash": "0"
         },

@@ -1,6 +1,8 @@
+'use strict';
+
 const sha256 = require('sha256');
 const R = require('ramda');
-const { v4: uuidv4 } = require('uuid');
+const {v4: uuidv4} = require('uuid');
 
 function Blockchain(currentNodeUrl, nodeIdentifier) {
     this.nodeIdentifier = nodeIdentifier.replace(/\D/g, '');
@@ -10,13 +12,13 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
     this.chain = [];
     this.pendingTransactions = [];
 
-    console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(this.nodeIdentifier, null, '0'))} on ${this.currentNodeUrl}`);
+    console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${this.currentNodeUrl}`);
 }
 
 Blockchain.prototype.isChainValid = function (blockchain) {
     let validChain = true;
     const genesisBlock = blockchain[0];
-    const correctNonce = genesisBlock.nonce === this.nodeIdentifier;
+    const correctNonce = genesisBlock.nonce === undefined;
     const correctPreviousBlockHash = genesisBlock.previousBlockHash === null;
     const correctHash = genesisBlock.hash === '0';
     const correctTransactions = genesisBlock.transactions.length === 0;
@@ -64,7 +66,13 @@ Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData
 }
 
 Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce) {
-    const dataAsString = previousBlockHash + nonce.toString() + JSON.stringify(currentBlockData);
+    const currentBlockDataAsString = JSON.stringify(currentBlockData);
+    const nonceAsString = nonce.toString();
+    const dataAsString = `${previousBlockHash}${nonceAsString}${currentBlockDataAsString}`;
+    return this.hash(dataAsString);
+}
+
+Blockchain.prototype.hash = function (dataAsString) {
     return sha256(dataAsString);
 }
 
