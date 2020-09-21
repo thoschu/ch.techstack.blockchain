@@ -89,17 +89,17 @@ if (cluster.isMaster) {
                     const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
                     const hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
                     const newBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
-                    const fetchNodesPromisesArr = [];
+                    const fetchPromises = [];
 
                     bitcoin.networkNodes.forEach((networkNodeUrl) => {
-                        fetchNodesPromisesArr.push(fetch(`${networkNodeUrl}/receive-new-block`, {
+                        fetchPromises.push(fetch(`${networkNodeUrl}/receive-new-block`, {
                             method: 'POST',
                             body: JSON.stringify(newBlock),
                             headers: {'Content-Type': 'application/json'}
                         }));
                     });
 
-                    return Promise.all(fetchNodesPromisesArr).then(res => {
+                    return Promise.all(fetchPromises).then(res => {
                         const newTransaction = {
                             amount: 12.5,
                             sender: "00",
@@ -149,19 +149,19 @@ if (cluster.isMaster) {
                     console.log(`register-and-broadcast-node on ${bitcoin.currentNodeUrl} - newNodeUrl: ${newNodeUrl}`);
 
                     if (!bitcoin.networkNodes.includes(newNodeUrl) && bitcoin.currentNodeUrl !== newNodeUrl) {
-                        const fetchNodesPromisesArr = [];
+                        const fetchPromises = [];
 
                         bitcoin.networkNodes.push(newNodeUrl);
 
                         bitcoin.networkNodes.forEach((networkNodeUrl) => {
-                            fetchNodesPromisesArr.push(fetch(`${networkNodeUrl}/register-node`, {
+                            fetchPromises.push(fetch(`${networkNodeUrl}/register-node`, {
                                 method: 'POST',
                                 body: JSON.stringify({newNodeUrl: newNodeUrl}),
                                 headers: {'Content-Type': 'application/json'}
                             }));
                         });
 
-                        return await Promise.all(fetchNodesPromisesArr).then(async (res) => {
+                        return await Promise.all(fetchPromises).then(async (res) => {
                             const allNetworkNodes = [bitcoin.currentNodeUrl, ...bitcoin.networkNodes];
 
                             return await fetch(`${newNodeUrl}/register-nodes-bulk`, {
@@ -209,6 +209,49 @@ if (cluster.isMaster) {
                     });
 
                     return h.response({info: 'Bulk registration successful.'}).code(200);
+                }
+            }, {
+                method: 'GET',
+                path: '/consensus',
+                handler: (request, h) => {
+                    const fetchPromises = [];
+
+                    bitcoin.networkNodes.forEach((networkNodeUrl) => {
+                        fetchPromises.push(fetch(`${networkNodeUrl}/blockchain`).then(blockChain => blockChain.json()));
+                    });
+
+                    return Promise.all(fetchPromises).then(blockChainsArr => {
+                        const currentChainLength = bitcoin.chain.length;
+                        let isChainValid, note, chain;
+                        let maxChainLength = currentChainLength;
+                        let newLongestChain = null;
+                        let newPendingTransactions = null;
+
+                        blockChainsArr.forEach(blockChain => {
+                            const tempCurrentChain = blockChain.chain;
+                            const tempCurrentChainLength = tempCurrentChain.length;
+
+                            if (tempCurrentChainLength > maxChainLength) {
+                                maxChainLength = tempCurrentChainLength;
+                                newLongestChain = tempCurrentChain;
+                                newPendingTransactions = blockChain.pendingTransactions;
+                            }
+                        });
+
+                        isChainValid = bitcoin.isChainValid(newLongestChain);
+
+                        if (!newLongestChain || (newLongestChain && !isChainValid)) {
+                            note = 'Current chain has not been replaced.';
+                            chain = bitcoin.chain;
+                        } else {
+                            bitcoin.chain = newLongestChain;
+                            bitcoin.pendingTransactions = newPendingTransactions;
+                            note = 'This chain has been replaced.';
+                            chain = newLongestChain;
+                        }
+
+                        return h.response({note, chain}).code(200);
+                    });
                 }
             }, {
                 method: '*',
