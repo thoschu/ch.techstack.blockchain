@@ -266,6 +266,22 @@ if (cluster.isMaster) {
                         });
                 }
             }, {
+                method: 'GET',
+                path: '/block/:blockHash',
+                handler: (request, h) => {
+                    return h.redirect('/blockchain').code(309);
+                }
+            }, {
+                path: '/transaction/:transactionId',
+                handler: (request, h) => {
+                    return h.redirect('/blockchain').code(309);
+                }
+            }, {
+                path: '/address/:addresse',
+                handler: (request, h) => {
+                    return h.redirect('/blockchain').code(309);
+                }
+            }, {
                 method: '*',
                 path: '/',
                 handler: (request, h) => {

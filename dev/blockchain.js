@@ -15,6 +15,23 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
     console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${this.currentNodeUrl}`);
 }
 
+Blockchain.prototype.getBlockByHash = function (blockHash) {
+    let foundedBlock = null;
+
+    this.chain.some(block => {
+        const isHit = block.hash === blockHash;
+        if (isHit) {
+            foundedBlock = block;
+        }
+
+        return isHit;
+    })
+
+    // this.chain.forEach();
+
+    return foundedBlock;
+}
+
 Blockchain.prototype.isChainValid = function (blockchain) {
     let validChain = true;
     const genesisBlock = blockchain[0];
