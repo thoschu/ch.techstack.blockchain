@@ -9,10 +9,6 @@ function Blockchain(currentNodeUrl, nodeIdentifier);
 ```
 
 ```javascript
-Blockchain.prototype.consensus = function ();
-```
-
-```javascript
 Blockchain.prototype.isChainValid = function (blockchain);
 ```
 
@@ -26,6 +22,10 @@ Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData
 
 ```javascript
 Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce);
+```
+
+```javascript
+Blockchain.prototype.hash = function (dataAsString);
 ```
 
 ```javascript
@@ -46,60 +46,73 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash);
 
 ## server.js
 
-```json
+```ecmascript 6
 {
     method: 'GET',
     path: '/blockchain'
-
 }
 ```
 
-```json
+```ecmascript 6
+{
+    method: 'GET',
+    path: '/blockchain/hash'
+}
+```
+
+```ecmascript 6
 {
     method: 'POST',
     path: '/transaction'
 }
 ```
 
-```json
+```ecmascript 6
 {   
     method: 'POST',
     path: '/transaction/broadcast'
 }
 ```
 
-```json
+```ecmascript 6
 {         
     method: 'GET',
     path: '/mine'
 }
 ```
 
-```json
+```ecmascript 6
 {
     method: 'POST',
     path: '/receive-new-block'
 }
 ```
 
-```json
+```ecmascript 6
 {
     method: 'POST',
     path: '/register-and-broadcast-node'
 }
 ```
 
-```json
+```ecmascript 6
 {
     method: 'POST',
     path: '/register-node'
 }
 ```
 
-```json
+```ecmascript 6
 {    
     method: 'POST',
     path: '/register-nodes-bulk'
+}
+```
+
+```ecmascript 6
+{    
+    method: 'GET',
+    path: '/consensus'
 }
 ```
 
@@ -110,3 +123,7 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash);
 ![Transaction](./assets/blockchain-transaction-flow.png "Transaction")
 
 ![Mine](./assets/blockchain-mine-flow.png "Mine")
+
+#
+
+Software made with <img src="https://www.thomas-schulte.de/images/made_with_love.gif" width="32" height="32"> in Germany.
