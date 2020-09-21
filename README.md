@@ -2,8 +2,6 @@
 
 ⚠️ UNDER CONSTRUCTION ⚠️
 
-Software made with <img src="https://www.thomas-schulte.de/images/made_with_love.gif" width="32" height="32"> in Germany
-
 ## blockchain.js
 
 ```javascript
@@ -112,3 +110,7 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash);
 ![Transaction](./assets/blockchain-transaction-flow.png "Transaction")
 
 ![Mine](./assets/blockchain-mine-flow.png "Mine")
+
+#
+
+Software made with <img src="https://www.thomas-schulte.de/images/made_with_love.gif" width="32" height="32"> in Germany
