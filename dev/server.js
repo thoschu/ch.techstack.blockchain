@@ -267,16 +267,23 @@ if (cluster.isMaster) {
                 }
             }, {
                 method: 'GET',
-                path: '/block/:blockHash',
+                path: '/block/{blockHash?}',
                 handler: (request, h) => {
-                    return h.redirect('/blockchain').code(309);
+                    console.log(request.params);
+                    const params = request.params;
+                    const blockHash = params.blockHash;
+                    const foo = bitcoin.getBlockByHash()
+
+                    return h.response(params).code(200);
                 }
             }, {
+                method: 'GET',
                 path: '/transaction/:transactionId',
                 handler: (request, h) => {
                     return h.redirect('/blockchain').code(309);
                 }
             }, {
+                method: 'GET',
                 path: '/address/:addresse',
                 handler: (request, h) => {
                     return h.redirect('/blockchain').code(309);

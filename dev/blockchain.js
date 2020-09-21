@@ -20,6 +20,7 @@ Blockchain.prototype.getBlockByHash = function (blockHash) {
 
     this.chain.some(block => {
         const isHit = block.hash === blockHash;
+        console.log(block.index);
         if (isHit) {
             foundedBlock = block;
         }
