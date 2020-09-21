@@ -1,6 +1,6 @@
 # thoschu/ch.techstack.blockchain
 
-UNDER CONSTRUCTION
+⚠️ UNDER CONSTRUCTION ⚠️
 
 ## blockchain.js
 
@@ -102,6 +102,8 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash);
     path: '/register-nodes-bulk'
 }
 ```
+
+## 💡
 
 ![Network](./assets/blockchain-network-flow.png "Network")
 
