@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "description": "Technischen Grundlagen der Blockchain-Technologie.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "nodemon --watch dev -e js dev/server.js",
     "start": "concurrently ''",
-    "test": "node dev/test.js && echo \"Warning: no real tests specified\" && exit 1"
+    "test": "echo \"Warning: no real tests specified\" && exit 1",
+    "test:js": "node dev/test.js",
+    "test:mjs": "node -r esm dev/test.mjs"
   },
   "repository": {
     "type": "git",
@@ -26,6 +29,7 @@
   "dependencies": {
     "@hapi/hapi": "^20.0.0",
     "@hapi/inert": "^6.0.2",
+    "esm": "^3.2.25",
     "node-fetch": "^2.6.1",
     "ramda": "^0.27.1",
     "sha256": "^0.2.0",

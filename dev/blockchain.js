@@ -179,33 +179,4 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash) {
     return newBlock;
 }
 
-// export class Blockchain {
-//     constructor() {
-//         this.chain = [];
-//         this.newTransactions = [];
-//     }
-//
-//     createNewBlock(nonce, previousBlockHash, hash) {
-//         const newBlock = this.getABlock(nonce, previousBlockHash, hash);
-//
-//         this.newTransactions = [];
-//         this.chain.push(newBlock);
-//
-//         return newBlock;
-//     }
-//
-//     getABlock(nonce, previousBlockHash, hash) {
-//         const tempBlock = {
-//             index: this.chain.length + 1,
-//             timeStamp: Date.now(),
-//             transactions: this.newTransactions,
-//             nonce: nonce,
-//             previousBlockHash: previousBlockHash,
-//             hash: hash
-//         };
-//
-//         return tempBlock;
-//     }
-// }
-
 module.exports = Blockchain;
