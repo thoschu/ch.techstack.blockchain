@@ -5,7 +5,7 @@ const R = require('ramda');
 const {v4: uuidv4} = require('uuid');
 
 function Blockchain(currentNodeUrl, nodeIdentifier) {
-    this.nodeIdentifier = nodeIdentifier.replace(/\D/g, '');
+    this.nodeIdentifier = nodeIdentifier;
     this.currentNodeUrl = currentNodeUrl;
     this.networkNodes = [];
 
