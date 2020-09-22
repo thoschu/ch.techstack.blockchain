@@ -269,22 +269,42 @@ if (cluster.isMaster) {
                 method: 'GET',
                 path: '/block/{blockHash?}',
                 handler: (request, h) => {
-                    console.log(request.params);
+                    let blockByHash, statusCode;
                     const params = request.params;
                     const blockHash = params.blockHash;
-                    const foo = bitcoin.getBlockByHash()
 
-                    return h.response(params).code(200);
+                    blockByHash = bitcoin.getBlockByHash(blockHash);
+
+                    if (R.isNil(blockByHash)) {
+                        statusCode = 404;
+                    } else {
+                        statusCode = 200;
+                    }
+
+                    return h.response({block: blockByHash}).code(statusCode);
                 }
             }, {
                 method: 'GET',
-                path: '/transaction/:transactionId',
+                path: '/transaction/{transactionId?}',
                 handler: (request, h) => {
-                    return h.redirect('/blockchain').code(309);
+                    let transactionById, statusCode;
+                    const params = request.params;
+                    const transactionId = params.transactionId;
+
+                    transactionById = bitcoin.getTransactionById(transactionId);
+
+                    if (R.isNil(transactionById)) {
+                        transactionById = R.head(bitcoin.pendingTransactions);
+                        statusCode = 404;
+                    } else {
+                        statusCode = 200;
+                    }
+
+                    return h.response(transactionById).code(statusCode);
                 }
             }, {
                 method: 'GET',
-                path: '/address/:addresse',
+                path: '/address/{addresse?}',
                 handler: (request, h) => {
                     return h.redirect('/blockchain').code(309);
                 }

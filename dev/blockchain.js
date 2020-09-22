@@ -15,22 +15,36 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
     console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${this.currentNodeUrl}`);
 }
 
-Blockchain.prototype.getBlockByHash = function (blockHash) {
-    let foundedBlock = null;
+Blockchain.prototype.getTransactionById = function (transactionId) {
+    let correctTransaction = null;
 
-    this.chain.some(block => {
-        const isHit = block.hash === blockHash;
-        console.log(block.index);
+    this.pendingTransactions.some(transaction => {
+        const isHit = transaction.transactionId === transactionId;
+
         if (isHit) {
-            foundedBlock = block;
+            correctTransaction = transaction;
         }
 
         return isHit;
-    })
+    });
 
-    // this.chain.forEach();
+    return correctTransaction;
+}
 
-    return foundedBlock;
+Blockchain.prototype.getBlockByHash = function (blockHash) {
+    let correctBlock = null;
+
+    this.chain.some(block => {
+        const isHit = block.hash === blockHash;
+
+        if (isHit) {
+            correctBlock = block;
+        }
+
+        return isHit;
+    });
+
+    return correctBlock;
 }
 
 Blockchain.prototype.isChainValid = function (blockchain) {
