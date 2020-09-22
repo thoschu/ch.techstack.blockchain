@@ -5,7 +5,7 @@ const R = require('ramda');
 const {v4: uuidv4} = require('uuid');
 
 function Blockchain(currentNodeUrl, nodeIdentifier) {
-    this.nodeIdentifier = nodeIdentifier.replace(/\D/g, '');
+    this.nodeIdentifier = nodeIdentifier;
     this.currentNodeUrl = currentNodeUrl;
     this.networkNodes = [];
 
@@ -13,6 +13,72 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
     this.pendingTransactions = [];
 
     console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${this.currentNodeUrl}`);
+}
+
+Blockchain.prototype.getAddressData = function (address) {
+    let balance = 0;
+    const addressTransactions = [];
+
+    this.chain.forEach(block => {
+        block.transactions.forEach(transaction => {
+            const isSenderHit = transaction.sender === address;
+            const isRecipientHit = transaction.recipient === address;
+
+            if (isSenderHit || isRecipientHit) {
+                addressTransactions.push(transaction);
+            }
+        });
+    });
+
+    addressTransactions.forEach(transaction => {
+        if (transaction.recipient === address) {
+            balance += transaction.amount;
+        } else if (transaction.sender === address) {
+            balance -= transaction.amount;
+        }
+    });
+
+    return {
+        addressTransactions,
+        balance
+    };
+}
+
+Blockchain.prototype.getTransactionById = function (transactionId) {
+    let correctTransaction = null;
+    let correctBlock = null;
+
+    this.chain.some(block => {
+        return block.transactions.some(transaction => {
+            const isHit = transaction.transactionId === transactionId;
+
+            if (isHit) {
+                correctTransaction = transaction;
+                correctBlock = block;
+            }
+
+            return isHit;
+        });
+    });
+
+    return {
+        transaction: correctTransaction,
+        block: correctBlock
+    };
+}
+
+Blockchain.prototype.getBlockByHash = function (blockHash) {
+    let correctBlock = null;
+
+    this.chain.some(block => {
+        const isHit = block.hash === blockHash;
+
+        correctBlock = isHit ? block : correctBlock;
+
+        return isHit;
+    });
+
+    return correctBlock;
 }
 
 Blockchain.prototype.isChainValid = function (blockchain) {
@@ -33,8 +99,8 @@ Blockchain.prototype.isChainValid = function (blockchain) {
         };
         const blockHash = this.hashBlock(previousBlock.hash, tempBlockData, currentBlock.nonce);
 
-        console.log('previousBlock.hash ->', previousBlock.hash);
-        console.log('currentBlock.hash ->', currentBlock.hash);
+        // console.log('previousBlock.hash ->', previousBlock.hash);
+        // console.log('currentBlock.hash ->', currentBlock.hash);
 
         if ((!blockHash.substring(0, 4).startsWith('0000')) && currentBlock.previousBlockHash !== previousBlock.hash) {
             validChain = false;

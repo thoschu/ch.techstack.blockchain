@@ -266,6 +266,60 @@ if (cluster.isMaster) {
                         });
                 }
             }, {
+                method: 'GET',
+                path: '/block/{blockHash?}',
+                handler: (request, h) => {
+                    let blockByHash, statusCode;
+                    const params = request.params;
+                    const blockHash = params.blockHash;
+
+                    blockByHash = bitcoin.getBlockByHash(blockHash);
+
+                    if (R.isNil(blockByHash)) {
+                        statusCode = 404;
+                    } else {
+                        statusCode = 200;
+                    }
+
+                    return h.response({block: blockByHash}).code(statusCode);
+                }
+            }, {
+                method: 'GET',
+                path: '/transaction/{transactionId?}',
+                handler: (request, h) => {
+                    let transactionById, statusCode;
+                    const params = request.params;
+                    const transactionId = params.transactionId;
+
+                    transactionById = bitcoin.getTransactionById(transactionId);
+
+                    if (R.isNil(transactionById.transaction) || R.isNil(transactionById.block)) {
+                        statusCode = 404;
+                    } else {
+                        statusCode = 200;
+                    }
+
+                    return h.response(transactionById).code(statusCode);
+                }
+            }, {
+                method: 'GET',
+                path: '/address/{address?}',
+                handler: (request, h) => {
+                    let addressData, statusCode;
+                    const params = request.params;
+                    const address = params.address;
+
+                    addressData = bitcoin.getAddressData(address);
+
+                    if (R.isNil(addressData.addressTransactions)) {
+                        statusCode = 404;
+                    } else {
+                        statusCode = 200;
+                    }
+
+                    return h.response(addressData).code(statusCode);
+                }
+            }, {
                 method: '*',
                 path: '/',
                 handler: (request, h) => {
