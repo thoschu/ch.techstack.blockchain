@@ -303,9 +303,21 @@ if (cluster.isMaster) {
                 }
             }, {
                 method: 'GET',
-                path: '/address/{addresse?}',
+                path: '/address/{address?}',
                 handler: (request, h) => {
-                    return h.redirect('/blockchain').code(309);
+                    let addressData, statusCode;
+                    const params = request.params;
+                    const address = params.address;
+
+                    addressData = bitcoin.getAddressData(address);
+
+                    if (R.isNil(addressData.addressTransactions)) {
+                        statusCode = 404;
+                    } else {
+                        statusCode = 200;
+                    }
+
+                    return h.response(addressData).code(statusCode);
                 }
             }, {
                 method: '*',
