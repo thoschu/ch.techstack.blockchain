@@ -9,6 +9,10 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {}
 ```
 
 ```javascript
+Blockchain.prototype.getAddressData = function (address) {}
+```
+
+```javascript
 Blockchain.prototype.getTransactionById = function (transactionId) {}
 ```
 
