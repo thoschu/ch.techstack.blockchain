@@ -5,115 +5,157 @@
 ## blockchain.js
 
 ```javascript
-function Blockchain(currentNodeUrl, nodeIdentifier);
+function Blockchain(currentNodeUrl, nodeIdentifier) {}
 ```
 
 ```javascript
-Blockchain.prototype.isChainValid = function (blockchain);
+Blockchain.prototype.getTransactionById = function (transactionId) {}
 ```
 
 ```javascript
-Blockchain.prototype.currentBlockData = function ();
+Blockchain.prototype.getBlockByHash = function (blockHash) {}
 ```
 
 ```javascript
-Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData);
+Blockchain.prototype.isChainValid = function (blockchain) {}
 ```
 
 ```javascript
-Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce);
+Blockchain.prototype.currentBlockData = function () {}
 ```
 
 ```javascript
-Blockchain.prototype.hash = function (dataAsString);
+Blockchain.prototype.proofOfWork = function (previousBlockHash, currentBlockData) {}
 ```
 
 ```javascript
-Blockchain.prototype.createNewTransaction = function(amount, sender, recipient);
+Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce) {}
 ```
 
 ```javascript
-Blockchain.prototype.addTransactionToPendingTransaction = function(newTransaction);
+Blockchain.prototype.hash = function (dataAsString) {}
 ```
 
 ```javascript
-Blockchain.prototype.getLastBlock = function();
+Blockchain.prototype.createNewTransaction = function(amount, sender, recipient) {}
 ```
 
 ```javascript
-Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash);
+Blockchain.prototype.addTransactionToPendingTransaction = function(newTransaction) {}
+```
+
+```javascript
+Blockchain.prototype.getLastBlock = function() {}
+```
+
+```javascript
+Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash) {}
 ```
 
 ## server.js
 
 ```ecmascript 6
-{
+const route = {
     method: 'GET',
-    path: '/blockchain'
-}
+    path: '/blockchain',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{
+const route = {
     method: 'GET',
-    path: '/blockchain/hash'
-}
+    path: '/blockchain/hash',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{
+const route = {
     method: 'POST',
-    path: '/transaction'
-}
+    path: '/transaction',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{   
+const route = {   
     method: 'POST',
-    path: '/transaction/broadcast'
-}
+    path: '/transaction/broadcast',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{         
+const route = {         
     method: 'GET',
-    path: '/mine'
-}
+    path: '/mine',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{
+const route = {
     method: 'POST',
-    path: '/receive-new-block'
-}
+    path: '/receive-new-block',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{
+const route = {
     method: 'POST',
-    path: '/register-and-broadcast-node'
-}
+    path: '/register-and-broadcast-node',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{
+const route = {
     method: 'POST',
-    path: '/register-node'
-}
+    path: '/register-node',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{    
+const route = {    
     method: 'POST',
-    path: '/register-nodes-bulk'
-}
+    path: '/register-nodes-bulk',
+    handler: (request, h) => {}
+};
 ```
 
 ```ecmascript 6
-{    
+const route = {    
     method: 'GET',
-    path: '/consensus'
-}
+    path: '/consensus',
+    handler: (request, h) => {}
+};
+```
+
+```ecmascript 6
+const route = {    
+    method: 'GET',
+    path: '/block/{blockHash?}',
+    handler: (request, h) => {}
+};
+```
+
+```ecmascript 6
+const route = {    
+    method: 'GET',
+    path: '/transaction/{transactionId?}',
+    handler: (request, h) => {}
+};
+```
+
+```ecmascript 6
+const route = {    
+    method: 'GET',
+    path: '/address/{addresse?}',
+    handler: (request, h) => {}
+};
 ```
 
 ## 💡
