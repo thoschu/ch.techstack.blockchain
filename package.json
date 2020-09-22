@@ -25,6 +25,7 @@
   "homepage": "https://github.com/thoschu/ch.techstack.blockchain#readme",
   "dependencies": {
     "@hapi/hapi": "^20.0.0",
+    "@hapi/inert": "^6.0.2",
     "node-fetch": "^2.6.1",
     "ramda": "^0.27.1",
     "sha256": "^0.2.0",
