@@ -17,18 +17,25 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
 
 Blockchain.prototype.getTransactionById = function (transactionId) {
     let correctTransaction = null;
+    let correctBlock = null;
 
-    this.pendingTransactions.some(transaction => {
-        const isHit = transaction.transactionId === transactionId;
+    this.chain.some(block => {
+        return block.transactions.some(transaction => {
+            const isHit = transaction.transactionId === transactionId;
 
-        if (isHit) {
-            correctTransaction = transaction;
-        }
+            if (isHit) {
+                correctTransaction = transaction;
+                correctBlock = block;
+            }
 
-        return isHit;
+            return isHit;
+        });
     });
 
-    return correctTransaction;
+    return {
+        transaction: correctTransaction,
+        block: correctBlock
+    };
 }
 
 Blockchain.prototype.getBlockByHash = function (blockHash) {
@@ -37,9 +44,7 @@ Blockchain.prototype.getBlockByHash = function (blockHash) {
     this.chain.some(block => {
         const isHit = block.hash === blockHash;
 
-        if (isHit) {
-            correctBlock = block;
-        }
+        correctBlock = isHit ? block : correctBlock;
 
         return isHit;
     });
@@ -65,8 +70,8 @@ Blockchain.prototype.isChainValid = function (blockchain) {
         };
         const blockHash = this.hashBlock(previousBlock.hash, tempBlockData, currentBlock.nonce);
 
-        console.log('previousBlock.hash ->', previousBlock.hash);
-        console.log('currentBlock.hash ->', currentBlock.hash);
+        // console.log('previousBlock.hash ->', previousBlock.hash);
+        // console.log('currentBlock.hash ->', currentBlock.hash);
 
         if ((!blockHash.substring(0, 4).startsWith('0000')) && currentBlock.previousBlockHash !== previousBlock.hash) {
             validChain = false;

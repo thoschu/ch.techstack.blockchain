@@ -293,8 +293,7 @@ if (cluster.isMaster) {
 
                     transactionById = bitcoin.getTransactionById(transactionId);
 
-                    if (R.isNil(transactionById)) {
-                        transactionById = R.head(bitcoin.pendingTransactions);
+                    if (R.isNil(transactionById.transaction) || R.isNil(transactionById.block)) {
                         statusCode = 404;
                     } else {
                         statusCode = 200;
