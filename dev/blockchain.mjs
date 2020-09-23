@@ -2,7 +2,7 @@
 
 import * as sha256 from 'sha256';
 import {dec, inc, last, not} from 'ramda';
-import * as uuidv4 from 'uuid';
+import * as uuid from 'uuid';
 
 export class Blockchain {
     constructor(currentNodeUrl, nodeIdentifier) {
@@ -146,7 +146,7 @@ export class Blockchain {
 
     createNewTransaction(amount, sender, recipient) {
         const newTransaction = {
-            transactionId: uuidv4()
+            transactionId: uuid.v4()
         };
 
         newTransaction.amount = amount;
