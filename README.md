@@ -2,6 +2,25 @@
 
 ⚠️ UNDER CONSTRUCTION ⚠️
 
+## ❗ 
+
+❶
+```
+npm install 
+or
+npm ci
+```
+
+❷
+```
+npm start
+```
+
+❸
+```
+http://loclahost:3001/
+```
+
 ## blockchain.js
 
 ```javascript
