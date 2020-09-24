@@ -2,7 +2,7 @@
   "name": "ch.techstack.blockchain",
   "version": "1.0.0",
   "description": "Technischen Grundlagen der Blockchain-Technologie.",
-  "main": "index.js",
+  "main": "dev/blockchain.js",
   "scripts": {
     "dev": "nodemon --watch dev -e js dev/server.js",
     "start": "concurrently \"npm run dev\"",
