@@ -15,6 +15,20 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
     console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${this.currentNodeUrl}`);
 }
 
+Blockchain.prototype.getBlockByHash = function (blockHash) {
+    let correctBlock = null;
+
+    this.chain.some(block => {
+        const isHit = block.hash === blockHash;
+
+        correctBlock = isHit ? block : correctBlock;
+
+        return isHit;
+    });
+
+    return correctBlock;
+}
+
 Blockchain.prototype.isChainValid = function (blockchain) {
     let validChain = true;
     const genesisBlock = blockchain[0];
@@ -164,20 +178,6 @@ Blockchain.prototype.getTransactionById = function (transactionId) {
         transaction: correctTransaction,
         block: correctBlock
     };
-}
-
-Blockchain.prototype.getBlockByHash = function (blockHash) {
-    let correctBlock = null;
-
-    this.chain.some(block => {
-        const isHit = block.hash === blockHash;
-
-        correctBlock = isHit ? block : correctBlock;
-
-        return isHit;
-    });
-
-    return correctBlock;
 }
 
 module.exports = Blockchain;

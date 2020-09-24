@@ -195,11 +195,34 @@ describe('blockchain.js Test', () => {
 
     describe('isChainValid function', () => {
         it('test return value', () => {
+            let getLastBlock = bitcoin.getLastBlock(),
+                previousBlockHash = getLastBlock.hash,
+                currentBlockData = bitcoin.currentBlockData(),
+                nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
+                hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
+                isChainValid;
 
-            const newTransaction = bitcoin.isChainValid(amount, sender, recipient);
+            bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+            isChainValid = bitcoin.isChainValid(bitcoin.chain);
 
-            expect().toBeTrue();
+            expect(isChainValid).toBeTrue();
+
+            bitcoin.createNewBlock('xxxx', previousBlockHash, hash);
+            isChainValid = bitcoin.isChainValid(bitcoin.chain);
+
+            expect(isChainValid).toBeFalse();
         });
+    });
+
+    describe('getBlockByHash function', () => {
+        let getLastBlock = bitcoin.getLastBlock(),
+            previousBlockHash = getLastBlock.hash,
+            currentBlockData = bitcoin.currentBlockData(),
+            nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
+            hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
+            isChainValid;
+
+        it('test return value', () => {});
     });
 });
 

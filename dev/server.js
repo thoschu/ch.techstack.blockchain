@@ -134,7 +134,10 @@ if (cluster.isMaster) {
                     }).then(res => {
                         // console.dir(res);
 
-                        return h.response({note: 'New block mined & broadcast successfully.', block: newBlock}).code(200);
+                        return h.response({
+                            note: 'New block mined & broadcast successfully.',
+                            block: newBlock
+                        }).code(200);
                     });
                 }
             }, {
