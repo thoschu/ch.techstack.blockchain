@@ -15,11 +15,52 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
     console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${this.currentNodeUrl}`);
 }
 
-Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce) {
-    const currentBlockDataAsString = JSON.stringify(currentBlockData);
-    const nonceAsString = nonce.toString();
-    const dataAsString = `${previousBlockHash}${nonceAsString}${currentBlockDataAsString}`;
-    return this.hash(dataAsString);
+Blockchain.prototype.isChainValid = function (blockchain) {
+    let validChain = true;
+    const genesisBlock = blockchain[0];
+    const correctNonce = genesisBlock.nonce === undefined;
+    const correctPreviousBlockHash = genesisBlock.previousBlockHash === null;
+    const correctHash = genesisBlock.hash === '0';
+    const correctTransactions = genesisBlock.transactions.length === 0;
+    const noValidGenesisBlock = !correctNonce || !correctPreviousBlockHash || !correctHash || !correctTransactions;
+
+    for (let i = 1; i < blockchain.length; i++) {
+        const currentBlock = blockchain[i];
+        const previousBlock = blockchain[R.dec(i)];
+        const tempBlockData = {
+            index: currentBlock.index,
+            transactions: currentBlock.transactions
+        };
+        const blockHash = this.hashBlock(previousBlock.hash, tempBlockData, currentBlock.nonce);
+
+        // console.log('previousBlock.hash ->', previousBlock.hash);
+        // console.log('currentBlock.hash ->', currentBlock.hash);
+
+        if ((!blockHash.substring(0, 4).startsWith('0000')) && currentBlock.previousBlockHash !== previousBlock.hash) {
+            validChain = false;
+            break;
+        }
+    }
+
+    return validChain && R.not(noValidGenesisBlock);
+}
+
+Blockchain.prototype.addTransactionToPendingTransaction = function(newTransaction) {
+    this.pendingTransactions.push(newTransaction);
+
+    return R.inc(this.getLastBlock()['index']);
+}
+
+Blockchain.prototype.createNewTransaction = function(amount, sender, recipient) {
+    const newTransaction = {
+        transactionId: uuidv4()
+    };
+
+    newTransaction.amount = amount;
+    newTransaction.sender = sender;
+    newTransaction.recipient = recipient;
+
+    return newTransaction;
 }
 
 Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash) {
@@ -36,6 +77,13 @@ Blockchain.prototype.createNewBlock = function(nonce, previousBlockHash, hash) {
     this.chain.push(newBlock);
 
     return newBlock;
+}
+
+Blockchain.prototype.hashBlock = function (previousBlockHash, currentBlockData, nonce) {
+    const currentBlockDataAsString = JSON.stringify(currentBlockData);
+    const nonceAsString = nonce.toString();
+    const dataAsString = `${previousBlockHash}${nonceAsString}${currentBlockDataAsString}`;
+    return this.hash(dataAsString);
 }
 
 Blockchain.prototype.hash = function (dataAsString) {
@@ -130,54 +178,6 @@ Blockchain.prototype.getBlockByHash = function (blockHash) {
     });
 
     return correctBlock;
-}
-
-Blockchain.prototype.isChainValid = function (blockchain) {
-    let validChain = true;
-    const genesisBlock = blockchain[0];
-    const correctNonce = genesisBlock.nonce === undefined;
-    const correctPreviousBlockHash = genesisBlock.previousBlockHash === null;
-    const correctHash = genesisBlock.hash === '0';
-    const correctTransactions = genesisBlock.transactions.length === 0;
-    const noValidGenesisBlock = !correctNonce || !correctPreviousBlockHash || !correctHash || !correctTransactions;
-
-    for (let i = 1; i < blockchain.length; i++) {
-        const currentBlock = blockchain[i];
-        const previousBlock = blockchain[R.dec(i)];
-        const tempBlockData = {
-            index: currentBlock.index,
-            transactions: currentBlock.transactions
-        };
-        const blockHash = this.hashBlock(previousBlock.hash, tempBlockData, currentBlock.nonce);
-
-        // console.log('previousBlock.hash ->', previousBlock.hash);
-        // console.log('currentBlock.hash ->', currentBlock.hash);
-
-        if ((!blockHash.substring(0, 4).startsWith('0000')) && currentBlock.previousBlockHash !== previousBlock.hash) {
-            validChain = false;
-            break;
-        }
-    }
-
-    return validChain && R.not(noValidGenesisBlock);
-}
-
-Blockchain.prototype.createNewTransaction = function(amount, sender, recipient) {
-    const newTransaction = {
-        transactionId: uuidv4()
-    };
-
-    newTransaction.amount = amount;
-    newTransaction.sender = sender;
-    newTransaction.recipient = recipient;
-
-    return newTransaction;
-}
-
-Blockchain.prototype.addTransactionToPendingTransaction = function(newTransaction) {
-    this.pendingTransactions.push(newTransaction);
-
-    return R.inc(this.getLastBlock()['index']);
 }
 
 module.exports = Blockchain;
