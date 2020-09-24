@@ -196,7 +196,7 @@ describe('blockchain.js Test', () => {
     describe('isChainValid function', () => {
         it('test return value', () => {
 
-            const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
+            const newTransaction = bitcoin.isChainValid(amount, sender, recipient);
 
             expect().toBeTrue();
         });
