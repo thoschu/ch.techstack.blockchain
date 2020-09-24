@@ -2,10 +2,12 @@
 
 const cluster = require('cluster');
 const os = require('os');
+const path = require('path');
 const R = require('ramda');
 const Hapi = require('@hapi/hapi');
-const { v4: uuidv4 } = require('uuid');
-const fetch = require('node-fetch');
+const Inert = require('@hapi/inert');
+const { v4: Uuidv4 } = require('uuid');
+const Fetch = require('node-fetch');
 
 const BlockChain = require('./blockchain');
 
@@ -30,10 +32,19 @@ if (cluster.isMaster) {
     (async () => {
         const server = Hapi.server({
             port: port,
-            host: 'localhost'
+            host: 'localhost',
+            routes: {
+                files: {
+                    relativeTo: path.join(__dirname, 'public')
+                }
+            }
         });
 
-        const nodeAddress = uuidv4();
+        console.log(path.join(__dirname, 'public'));
+
+        await server.register(Inert);
+
+        const nodeAddress = Uuidv4();
         const bitcoin = new BlockChain(server.info.uri, nodeAddress);
 
         server.route([
@@ -47,7 +58,7 @@ if (cluster.isMaster) {
                 method: 'GET',
                 path: '/blockchain/hash',
                 handler: async (request, h) => {
-                    return await fetch(`${bitcoin.currentNodeUrl}/blockchain`)
+                    return await Fetch(`${bitcoin.currentNodeUrl}/blockchain`)
                         .then(res => res.text())
                         .then(body => h.response(bitcoin.hash(body)).code(200));
                 }
@@ -74,7 +85,7 @@ if (cluster.isMaster) {
                     bitcoin.addTransactionToPendingTransaction(newTransaction);
 
                     bitcoin.networkNodes.forEach(networkNodeUrl => {
-                        fetchPromises.push(fetch(`${networkNodeUrl}/transaction`, {
+                        fetchPromises.push(Fetch(`${networkNodeUrl}/transaction`, {
                             method: 'POST',
                             body: JSON.stringify(newTransaction),
                             headers: {'Content-Type': 'application/json'}
@@ -100,7 +111,7 @@ if (cluster.isMaster) {
                     const fetchPromises = [];
 
                     bitcoin.networkNodes.forEach((networkNodeUrl) => {
-                        fetchPromises.push(fetch(`${networkNodeUrl}/receive-new-block`, {
+                        fetchPromises.push(Fetch(`${networkNodeUrl}/receive-new-block`, {
                             method: 'POST',
                             body: JSON.stringify(newBlock),
                             headers: {'Content-Type': 'application/json'}
@@ -114,7 +125,7 @@ if (cluster.isMaster) {
                             recipient: nodeAddress
                         };
 
-                        return fetch(`${bitcoin.currentNodeUrl}/transaction/broadcast`, {
+                        return Fetch(`${bitcoin.currentNodeUrl}/transaction/broadcast`, {
                             method: 'POST',
                             body: JSON.stringify(newTransaction),
                             headers: {'Content-Type': 'application/json'}
@@ -162,7 +173,7 @@ if (cluster.isMaster) {
                         bitcoin.networkNodes.push(newNodeUrl);
 
                         bitcoin.networkNodes.forEach((networkNodeUrl) => {
-                            fetchPromises.push(fetch(`${networkNodeUrl}/register-node`, {
+                            fetchPromises.push(Fetch(`${networkNodeUrl}/register-node`, {
                                 method: 'POST',
                                 body: JSON.stringify({newNodeUrl: newNodeUrl}),
                                 headers: {'Content-Type': 'application/json'}
@@ -172,7 +183,7 @@ if (cluster.isMaster) {
                         return await Promise.all(fetchPromises).then(async (res) => {
                             const allNetworkNodes = [bitcoin.currentNodeUrl, ...bitcoin.networkNodes];
 
-                            return await fetch(`${newNodeUrl}/register-nodes-bulk`, {
+                            return await Fetch(`${newNodeUrl}/register-nodes-bulk`, {
                                 method: 'POST',
                                 body: JSON.stringify({allNetworkNodes: allNetworkNodes}),
                                 headers: {'Content-Type': 'application/json'}
@@ -227,10 +238,7 @@ if (cluster.isMaster) {
                     bitcoin.networkNodes.forEach((networkNodeUrl) => {
                         console.log(bitcoin.currentNodeUrl);
                         console.log(networkNodeUrl);
-                        fetchPromises.push(
-                            fetch(`${networkNodeUrl}/blockchain`)
-                                .then(blockChain => blockChain.json())
-                        );
+                        fetchPromises.push(Fetch(`${networkNodeUrl}/blockchain`).then(blockChain => blockChain.json()));
                     });
 
                     return Promise.all(fetchPromises)
@@ -320,10 +328,19 @@ if (cluster.isMaster) {
                     return h.response(addressData).code(statusCode);
                 }
             }, {
+                method: 'GET',
+                path: '/{param*}',
+                handler: {
+                    directory: {
+                        path: '.',
+                        redirectToSlash: true
+                    }
+                }
+            }, {
                 method: '*',
-                path: '/',
+                path: '/{any*}',
                 handler: (request, h) => {
-                    return h.redirect('/blockchain').code(309);
+                    return h.response('\'404 Error! Page Not Found!\'').code(404);
                 }
             }
         ]);
