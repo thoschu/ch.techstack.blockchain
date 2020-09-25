@@ -215,14 +215,22 @@ describe('blockchain.js Test', () => {
     });
 
     describe('getBlockByHash function', () => {
-        let getLastBlock = bitcoin.getLastBlock(),
-            previousBlockHash = getLastBlock.hash,
-            currentBlockData = bitcoin.currentBlockData(),
-            nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
-            hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
-            isChainValid;
 
-        it('test return value', () => {});
+
+        it('test return value', () => {
+            let getLastBlock = bitcoin.getLastBlock(),
+                previousBlockHash = getLastBlock.hash,
+                currentBlockData = bitcoin.currentBlockData(),
+                nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
+                hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
+                isChainValid = false;
+
+            bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+
+
+
+            expect(isChainValid).toBeFalse();
+        });
     });
 });
 
