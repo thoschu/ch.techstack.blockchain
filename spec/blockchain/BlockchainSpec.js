@@ -215,22 +215,26 @@ describe('blockchain.js Test', () => {
     });
 
     describe('getBlockByHash function', () => {
-        const genesisBlockHash = '0';
-        const firstBlockHash = '00002b62f1205be4a02b5f13b07344e7dbbe80088ec44327c34971412405da12';
-
         it('test return value', () => {
             let getLastBlock = bitcoin.getLastBlock(),
                 previousBlockHash = getLastBlock.hash,
                 currentBlockData = bitcoin.currentBlockData(),
                 nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
                 hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
-                fetchedBlock;
+                createdNewBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash),
+                fetchedBlock = bitcoin.getBlockByHash(createdNewBlock.hash);
 
-            const firstBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+            expect(createdNewBlock).toBe(fetchedBlock);
 
-            console.log(bitcoin);
+            getLastBlock = bitcoin.getLastBlock();
+            previousBlockHash = getLastBlock.hash;
+            currentBlockData = bitcoin.currentBlockData();
+            nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
+            hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
+            createdNewBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+            fetchedBlock = bitcoin.getBlockByHash(createdNewBlock.hash);
 
-            expect(firstBlock).toBeTruthy();
+            expect(createdNewBlock).toBe(fetchedBlock);
         });
     });
 });
