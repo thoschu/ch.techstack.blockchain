@@ -18,29 +18,29 @@ describe('blockchain.js Test', () => {
     });
 
     describe('blockchain constructor', () => {
-        it('test nodeIdentifier', () => {
+        it('1. test nodeIdentifier', () => {
             expect(bitcoin.nodeIdentifier).toBe(nodeIdentifier);
         });
 
-        it('test currentNodeUrl', () => {
+        it('2. test currentNodeUrl', () => {
             expect(bitcoin.currentNodeUrl).toBe(currentNodeUrl);
         });
 
-        it('test networkNodes array for the right length of 0', () => {
+        it('3. test networkNodes array for the right length of 0', () => {
             expect(bitcoin.networkNodes.length).toBe(0);
         });
 
-        it('test chain array for the right length of 1', () => {
+        it('4. test chain array for the right length of 1', () => {
             expect(bitcoin.chain.length).toBe(1); // genesis block
         });
 
-        it('test pendingTransactions array for the right length of 0', () => {
+        it('5. test pendingTransactions array for the right length of 0', () => {
             expect(bitcoin.pendingTransactions.length).toBe(0);
         });
     });
 
     describe('currentBlockData function', () => {
-        it('test return value', () => {
+        it('6. test return value', () => {
             let example = {
                 index: 2,
                 transactions: [],
@@ -53,7 +53,7 @@ describe('blockchain.js Test', () => {
     });
 
     describe('getLastBlock function', () => {
-        it('test return value', () => {
+        it('7. test return value', () => {
             const getLastBlock = bitcoin.getLastBlock();
             const index = getLastBlock.index;
             const timeStamp = new Date(getLastBlock.timeStamp);
@@ -85,7 +85,7 @@ describe('blockchain.js Test', () => {
     });
 
     describe('proofOfWork function', () => {
-        it('test return value', () => {
+        it('8. test return value', () => {
             const getLastBlock = bitcoin.getLastBlock();
             const previousBlockHash = getLastBlock.hash;
             const currentBlockData = bitcoin.currentBlockData();
@@ -96,7 +96,7 @@ describe('blockchain.js Test', () => {
     });
 
     describe('hash function', () => {
-        it('test return value', () => {
+        it('9. test return value', () => {
             const expected = '8bb0cf6eb9b17d0f7d22b456f121257dc1254e1f01665370476383ea776df414';
             const hash = bitcoin.hash(nodeIdentifier);
 
@@ -105,7 +105,7 @@ describe('blockchain.js Test', () => {
     });
 
     describe('hashBlock function', () => {
-        it('test return value', () => {
+        it('10. test return value', () => {
             const getLastBlock = bitcoin.getLastBlock();
             const previousBlockHash = getLastBlock.hash;
             const currentBlockData = bitcoin.currentBlockData();
@@ -134,7 +134,7 @@ describe('blockchain.js Test', () => {
             newBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
         });
 
-        it('test return value', () => {
+        it('11. test return value', () => {
             expect(newBlock.index).toBe(2);
             expect(new Date(newBlock.timeStamp).getFullYear()).toBe(new Date().getFullYear());
             expect(newBlock.transactions).toEqual([]);
@@ -143,17 +143,17 @@ describe('blockchain.js Test', () => {
             expect(newBlock.hash).toBe(hash);
         });
 
-        it('test bitcoin.chain array length after new block creation', () => {
+        it('12. test bitcoin.chain array length after new block creation', () => {
             expect(bitcoin.chain.length).toBe(2);
         });
 
-        it('test bitcoin.chain array for new block after new block creation', () => {
+        it('13. test bitcoin.chain array for new block after new block creation', () => {
             const foundBlock = bitcoin.chain.find(block => block == newBlock);
 
             expect(foundBlock).not.toBeUndefined();
         });
 
-        it('test bitcoin.pendingTransactions array length after new block creation', () => {
+        it('14. test bitcoin.pendingTransactions array length after new block creation', () => {
             const pendingTransactions = bitcoin.pendingTransactions;
 
             expect(pendingTransactions.length).toBe(0);
@@ -161,7 +161,7 @@ describe('blockchain.js Test', () => {
     });
 
     describe('createNewTransaction function', () => {
-        it('test return value', () => {
+        it('15. test return value', () => {
             const amount = 1977, sender = '13', recipient = '7'
             const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
 
@@ -175,14 +175,14 @@ describe('blockchain.js Test', () => {
     describe('addTransactionToPendingTransaction function', () => {
         const amount = 1977, sender = '13', recipient = '7'
 
-        it('test return value', () => {
+        it('16. test return value', () => {
             const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
             const newTransactionBlockIndex = bitcoin.addTransactionToPendingTransaction(newTransaction);
 
             expect(newTransactionBlockIndex).toBe(2);
         });
 
-        it('test bitcoin.pendingTransactions array length before and after new transaction creation and adding to pendingTransactions array', () => {
+        it('17. test bitcoin.pendingTransactions array length before and after new transaction creation and adding to pendingTransactions array', () => {
             const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
 
             expect(bitcoin.pendingTransactions.length).toBe(0);
@@ -194,7 +194,7 @@ describe('blockchain.js Test', () => {
     });
 
     describe('isChainValid function', () => {
-        it('test return value', () => {
+        it('18. test return value', () => {
             let getLastBlock = bitcoin.getLastBlock(),
                 previousBlockHash = getLastBlock.hash,
                 currentBlockData = bitcoin.currentBlockData(),
@@ -215,7 +215,7 @@ describe('blockchain.js Test', () => {
     });
 
     describe('getBlockByHash function', () => {
-        it('test return value', () => {
+        it('19. test return value', () => {
             let getLastBlock = bitcoin.getLastBlock(),
                 previousBlockHash = getLastBlock.hash,
                 currentBlockData = bitcoin.currentBlockData(),
