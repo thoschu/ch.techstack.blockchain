@@ -1,3 +1,7 @@
+'use strict';
+
+const {validate: validateUuidv4} = require('uuid');
+
 const BlockChain = require('../../dev/blockchain.js');
 
 describe('blockchain.js Test', () => {
@@ -46,10 +50,6 @@ describe('blockchain.js Test', () => {
 
             expect(bitcoin.currentBlockData()).toEqual(example);
         });
-    });
-
-    beforeEach(() => {
-        console.log('************');
     });
 
     describe('getLastBlock function', () => {
@@ -118,19 +118,118 @@ describe('blockchain.js Test', () => {
     });
 
     describe('createNewBlock function', () => {
+        let getLastBlock,
+            previousBlockHash,
+            currentBlockData ,
+            nonce ,
+            hash,
+            newBlock;
+
+        beforeEach(() => {
+            getLastBlock = bitcoin.getLastBlock();
+            previousBlockHash = getLastBlock.hash;
+            currentBlockData = bitcoin.currentBlockData();
+            nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
+            hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
+            newBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+        });
+
         it('test return value', () => {
-            const getLastBlock = bitcoin.getLastBlock();
-            const previousBlockHash = getLastBlock.hash;
-            const currentBlockData = bitcoin.currentBlockData();
-            const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
-            const hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
-            const newBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+            expect(newBlock.index).toBe(2);
+            expect(new Date(newBlock.timeStamp).getFullYear()).toBe(new Date().getFullYear());
+            expect(newBlock.transactions).toEqual([]);
+            expect(newBlock.nonce).toBe(nonce);
+            expect(newBlock.previousBlockHash).toBe(previousBlockHash);
+            expect(newBlock.hash).toBe(hash);
+        });
 
-            console.log(nonce);
-            // console.log(newBlock);
-            // console.log(bitcoin);
+        it('test bitcoin.chain array length after new block creation', () => {
+            expect(bitcoin.chain.length).toBe(2);
+        });
 
-            expect(newBlock).toBeTruthy();
+        it('test bitcoin.chain array for new block after new block creation', () => {
+            const foundBlock = bitcoin.chain.find(block => block == newBlock);
+
+            expect(foundBlock).not.toBeUndefined();
+        });
+
+        it('test bitcoin.pendingTransactions array length after new block creation', () => {
+            const pendingTransactions = bitcoin.pendingTransactions;
+
+            expect(pendingTransactions.length).toBe(0);
+        });
+    });
+
+    describe('createNewTransaction function', () => {
+        it('test return value', () => {
+            const amount = 1977, sender = '13', recipient = '7'
+            const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
+
+            expect(validateUuidv4(newTransaction.transactionId)).toBeTrue();
+            expect(newTransaction.amount).toBe(amount);
+            expect(newTransaction.sender).toBe(sender);
+            expect(newTransaction.recipient).toBe(recipient);
+        });
+    });
+
+    describe('addTransactionToPendingTransaction function', () => {
+        const amount = 1977, sender = '13', recipient = '7'
+
+        it('test return value', () => {
+            const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
+            const newTransactionBlockIndex = bitcoin.addTransactionToPendingTransaction(newTransaction);
+
+            expect(newTransactionBlockIndex).toBe(2);
+        });
+
+        it('test bitcoin.pendingTransactions array length before and after new transaction creation and adding to pendingTransactions array', () => {
+            const newTransaction = bitcoin.createNewTransaction(amount, sender, recipient);
+
+            expect(bitcoin.pendingTransactions.length).toBe(0);
+
+            bitcoin.addTransactionToPendingTransaction(newTransaction);
+
+            expect(bitcoin.pendingTransactions.length).toBe(1);
+        });
+    });
+
+    describe('isChainValid function', () => {
+        it('test return value', () => {
+            let getLastBlock = bitcoin.getLastBlock(),
+                previousBlockHash = getLastBlock.hash,
+                currentBlockData = bitcoin.currentBlockData(),
+                nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
+                hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
+                isChainValid;
+
+            bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+            isChainValid = bitcoin.isChainValid(bitcoin.chain);
+
+            expect(isChainValid).toBeTrue();
+
+            bitcoin.createNewBlock('xxxx', previousBlockHash, hash);
+            isChainValid = bitcoin.isChainValid(bitcoin.chain);
+
+            expect(isChainValid).toBeFalse();
+        });
+    });
+
+    describe('getBlockByHash function', () => {
+
+
+        it('test return value', () => {
+            let getLastBlock = bitcoin.getLastBlock(),
+                previousBlockHash = getLastBlock.hash,
+                currentBlockData = bitcoin.currentBlockData(),
+                nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
+                hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
+                isChainValid = false;
+
+            bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+
+
+
+            expect(isChainValid).toBeFalse();
         });
     });
 });

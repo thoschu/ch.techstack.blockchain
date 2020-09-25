@@ -2,10 +2,10 @@
   "name": "ch.techstack.blockchain",
   "version": "1.0.0",
   "description": "Technischen Grundlagen der Blockchain-Technologie.",
-  "main": "index.js",
+  "main": "dev/blockchain.js",
   "scripts": {
     "dev": "nodemon --watch dev -e js dev/server.js",
-    "start": "concurrently ''",
+    "start": "concurrently \"npm run dev\"",
     "test": "jasmine",
     "test:js": "node dev/test.js",
     "test:mjs": "node -r esm dev/test.mjs"
@@ -28,6 +28,7 @@
   "dependencies": {
     "@hapi/hapi": "^20.0.0",
     "@hapi/inert": "^6.0.2",
+    "concurrently": "^5.3.0",
     "esm": "^3.2.25",
     "node-fetch": "^2.6.1",
     "ramda": "^0.27.1",
