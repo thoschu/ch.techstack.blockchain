@@ -16,9 +16,11 @@ npm ci
 npm start
 ```
 
+[http://loclahost:300*](http://loclahost:300*)
+
 ❸
 ```
-http://loclahost:3001/
+npm test
 ```
 
 ## blockchain.js
