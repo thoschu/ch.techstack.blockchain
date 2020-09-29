@@ -222,6 +222,7 @@ describe('blockchain.js Test', () => {
                 nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
                 hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
                 createdNewBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash),
+
                 fetchedBlock = bitcoin.getBlockByHash(createdNewBlock.hash);
 
             expect(createdNewBlock).toBe(fetchedBlock);
@@ -232,9 +233,29 @@ describe('blockchain.js Test', () => {
             nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
             hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
             createdNewBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
+
             fetchedBlock = bitcoin.getBlockByHash(createdNewBlock.hash);
 
             expect(createdNewBlock).toBe(fetchedBlock);
+        });
+    });
+
+    describe('getTransactionById function', () => {
+        it('20. test return value', () => {
+            let newTransaction = bitcoin.createNewTransaction(50, 'Tom', 'Max'),
+                newTransactionId = newTransaction.transactionId,
+                blockIndex = bitcoin.addTransactionToPendingTransaction(newTransaction),
+                getLastBlock = bitcoin.getLastBlock(),
+                previousBlockHash = getLastBlock.hash,
+                currentBlockData = bitcoin.currentBlockData(),
+                nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
+                hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
+                createdNewBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash),
+                transactionById = bitcoin.getTransactionById(newTransactionId)
+
+            expect(blockIndex).toBe(2);
+            expect(createdNewBlock.transactions[0].transactionId).toBe(newTransactionId);
+            expect(transactionById.transaction.transactionId).toBe(newTransactionId);
         });
     });
 });
