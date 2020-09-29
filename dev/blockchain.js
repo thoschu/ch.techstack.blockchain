@@ -15,6 +15,29 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
     console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${this.currentNodeUrl}`);
 }
 
+Blockchain.prototype.getTransactionById = function (transactionId) {
+    let correctTransaction = null;
+    let correctBlock = null;
+
+    this.chain.some(block => {
+        return block.transactions.some(transaction => {
+            const isHit = transaction.transactionId === transactionId;
+
+            if (isHit) {
+                correctTransaction = transaction;
+                correctBlock = block;
+            }
+
+            return isHit;
+        });
+    });
+
+    return {
+        transaction: correctTransaction,
+        block: correctBlock
+    };
+}
+
 Blockchain.prototype.getBlockByHash = function (blockHash) {
     let correctBlock = null;
 
@@ -154,29 +177,6 @@ Blockchain.prototype.getAddressData = function (address) {
     return {
         addressTransactions,
         balance
-    };
-}
-
-Blockchain.prototype.getTransactionById = function (transactionId) {
-    let correctTransaction = null;
-    let correctBlock = null;
-
-    this.chain.some(block => {
-        return block.transactions.some(transaction => {
-            const isHit = transaction.transactionId === transactionId;
-
-            if (isHit) {
-                correctTransaction = transaction;
-                correctBlock = block;
-            }
-
-            return isHit;
-        });
-    });
-
-    return {
-        transaction: correctTransaction,
-        block: correctBlock
     };
 }
 
