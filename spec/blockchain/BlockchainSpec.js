@@ -260,7 +260,34 @@ describe('blockchain.js Test', () => {
     });
 
     describe('getAddressData function', () => {
-        it('20. test return value', () => {
+        const sender = 'Tim',
+            recipient = 'John';
+
+        it('21. test return value', () => {
+            let newTransaction = bitcoin.createNewTransaction(500, sender, recipient),
+                newTransactionSender = newTransaction.sender,
+                newTransactionRecipient = newTransaction.recipient,
+                blockIndex = bitcoin.addTransactionToPendingTransaction(newTransaction),
+                getLastBlock = bitcoin.getLastBlock(),
+                previousBlockHash = getLastBlock.hash,
+                currentBlockData = bitcoin.currentBlockData(),
+                nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData),
+                hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce),
+                createdNewBlock = bitcoin.createNewBlock(nonce, previousBlockHash, hash),
+                blockByAddressData = bitcoin.getAddressData(sender);
+
+            expect(newTransactionSender).toBe(sender);
+            expect(newTransactionRecipient).toBe(recipient);
+            expect(blockIndex).toBe(2);
+            expect(createdNewBlock.transactions.length).toBe(1);
+            expect(blockByAddressData.addressTransactions.length).toBe(1);
+            expect(blockByAddressData.balance).toBe(-500);
+            expect(blockByAddressData.addressTransactions[0].sender).toBe(sender);
+            expect(blockByAddressData.addressTransactions[0].recipient).toBe(recipient);
+
+            blockByAddressData = bitcoin.getAddressData(recipient);
+
+            expect(blockByAddressData.balance).toBe(500);
         });
     });
 });
