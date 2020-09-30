@@ -15,6 +15,35 @@ function Blockchain(currentNodeUrl, nodeIdentifier) {
     console.info(`${this.nodeIdentifier} # Genesis-Block created: ${JSON.stringify(this.createNewBlock(undefined, null, '0'))} on ${this.currentNodeUrl}`);
 }
 
+Blockchain.prototype.getAddressData = function (address) {
+    let balance = 0;
+    const addressTransactions = [];
+
+    this.chain.forEach(block => {
+        block.transactions.forEach(transaction => {
+            const isSenderHit = transaction.sender === address;
+            const isRecipientHit = transaction.recipient === address;
+
+            if (isSenderHit || isRecipientHit) {
+                addressTransactions.push(transaction);
+            }
+        });
+    });
+
+    addressTransactions.forEach(transaction => {
+        if (transaction.recipient === address) {
+            balance += transaction.amount;
+        } else if (transaction.sender === address) {
+            balance -= transaction.amount;
+        }
+    });
+
+    return {
+        addressTransactions,
+        balance
+    };
+}
+
 Blockchain.prototype.getTransactionById = function (transactionId) {
     let correctTransaction = null;
     let correctBlock = null;
@@ -147,36 +176,6 @@ Blockchain.prototype.currentBlockData = function () {
     return {
         index: R.inc(this.getLastBlock().index),
         transactions: this.pendingTransactions,
-    };
-}
-
-
-Blockchain.prototype.getAddressData = function (address) {
-    let balance = 0;
-    const addressTransactions = [];
-
-    this.chain.forEach(block => {
-        block.transactions.forEach(transaction => {
-            const isSenderHit = transaction.sender === address;
-            const isRecipientHit = transaction.recipient === address;
-
-            if (isSenderHit || isRecipientHit) {
-                addressTransactions.push(transaction);
-            }
-        });
-    });
-
-    addressTransactions.forEach(transaction => {
-        if (transaction.recipient === address) {
-            balance += transaction.amount;
-        } else if (transaction.sender === address) {
-            balance -= transaction.amount;
-        }
-    });
-
-    return {
-        addressTransactions,
-        balance
     };
 }
 

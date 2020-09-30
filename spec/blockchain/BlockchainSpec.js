@@ -258,6 +258,11 @@ describe('blockchain.js Test', () => {
             expect(transactionById.transaction.transactionId).toBe(newTransactionId);
         });
     });
+
+    describe('getAddressData function', () => {
+        it('20. test return value', () => {
+        });
+    });
 });
 
 
