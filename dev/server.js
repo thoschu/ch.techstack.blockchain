@@ -359,3 +359,45 @@ if (cluster.isMaster) {
         process.exit(1);
     });
 }
+
+// const cluster = require('cluster');
+// const os = require('os');
+//
+// if (cluster.isWorker) {
+//
+//     console.log('* Worker ' + process.pid + ' has started.');
+//
+//     // Receive messages from the master process.
+//     process.on('message', function(msg) {
+//         console.log('** Worker ' + process.pid + ' received message from master.', msg);
+//
+//         // Send message to master process.
+//         process.send({msgFromWorker: 'This is from worker ' + process.pid + '.'})
+//     });
+//
+// } else if (cluster.isMaster) {
+//     const numCPUs = os.cpus().length;
+//
+//     console.log('# Master ' + process.pid + ' has started.');
+//
+//     // Fork workers.
+//     for (let i = 0; i < numCPUs; i++) {
+//         const worker = cluster.fork();
+//
+//         // Send a message from the master process to the worker.
+//         worker.send({msgFromMaster: (i + 1) + ' This is from master ' + process.pid + ' to worker ' + worker.process.pid + '.'});
+//
+//         // Receive messages from this worker and handle them in the master process.
+//         worker.on('message', function(msg) {
+//             // console.log('## Master ' + process.pid + ' received message from worker ' + this.process.pid + '.', msg);
+//         });
+//
+//     }
+// } else {
+//     console.log('------------');
+// }
+//
+// // Be notified when worker processes die.
+// cluster.on('death', function(worker) {
+//     console.log('!!! Worker ' + worker.pid + ' died.');
+// });
