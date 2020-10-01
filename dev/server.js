@@ -11,6 +11,8 @@ const Fetch = require('node-fetch');
 
 const BlockChain = require('./blockchain');
 
+// https://gist.github.com/vladimirze/960d8c721455333a154fa1f73b412d51
+
 if (cluster.isMaster) {
     const numCPUs = os.cpus().length;
 
