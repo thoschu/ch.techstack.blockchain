@@ -2,7 +2,9 @@
   "spec_dir": "spec",
   "spec_files": [
     "blockchain/*[sS]pec.js",
-    "blockchain/*[sS]pec.mjs"
+    "blockchain/*[sS]pec.mjs",
+    "api/*[sS]pec.js",
+    "api/*[sS]pec.mjs"
   ],
   "helpers": [
     "helpers/**/*.js",

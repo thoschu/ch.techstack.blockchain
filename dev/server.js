@@ -1,13 +1,13 @@
 'use strict';
 
-const cluster = require('cluster');
-const os = require('os');
-const path = require('path');
-const R = require('ramda');
-const Hapi = require('@hapi/hapi');
-const Inert = require('@hapi/inert');
-const { v4: Uuidv4 } = require('uuid');
-const Fetch = require('node-fetch');
+const cluster = require('cluster'),
+    os = require('os'),
+    path = require('path'),
+    R = require('ramda'),
+    Hapi = require('@hapi/hapi'),
+    Inert = require('@hapi/inert'),
+    {v4: Uuidv4} = require('uuid'),
+    Fetch = require('node-fetch');
 
 const BlockChain = require('./blockchain');
 
@@ -32,6 +32,7 @@ if (cluster.isMaster) {
         console.log(`worker ${worker.process.pid} died`);
     });
 } else {
+    let server = null;
     let port = `300${R.takeLast(1, `${process.pid}`)}`;
 
     console.log(`# Worker ${process.pid} started. ${port}`);
@@ -45,7 +46,7 @@ if (cluster.isMaster) {
         // process.send({msgFromWorker: 'This is from worker ' + process.pid + '.'})
 
         (async () => {
-            const server = Hapi.server({
+            server = Hapi.server({
                 port: port,
                 host: 'localhost',
                 routes: {
@@ -374,6 +375,8 @@ if (cluster.isMaster) {
 
         process.exit(1);
     });
+
+    module.exports = server;
 }
 
 /*
