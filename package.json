@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon --watch dev -e js dev/server.js",
     "start": "concurrently \"npm run dev\"",
+    "ngrok": "ngrok http 3000",
     "test": "jasmine",
     "test:js": "node dev/test.js",
     "test:mjs": "node -r esm dev/test.mjs"
@@ -39,6 +40,7 @@
     "jasmine": "^3.6.1",
     "jasmine-console-reporter": "^3.1.0",
     "jasmine-ts-console-reporter": "^3.1.1",
+    "ngrok": "^3.3.0",
     "nodemon": "^2.0.4",
     "request": "^2.88.2"
   }
