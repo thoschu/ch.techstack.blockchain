@@ -39,7 +39,7 @@ import {environment} from '../environments/environment';
 })
 export class AppModule {
   constructor(protected swUpdate: SwUpdate) {
-    // console.log(swUpdate);
+    console.log('https://medium.com/@arjenbrandenburgh/angulars-pwa-swpush-and-swupdate-15a7e5c154ac');
 
     this.swUpdate.available.subscribe(value => {
       let txt;

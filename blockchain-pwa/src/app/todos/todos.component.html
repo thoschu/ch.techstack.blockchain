@@ -1,0 +1,5 @@
+<input #input>
+<button (click)="add(input.value)">Add</button>
+<ul>
+  <li *ngFor="let todo of todos"> {{todo.id}} </li>
+</ul>
