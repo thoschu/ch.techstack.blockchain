@@ -6,8 +6,12 @@
     "ng": "nx",
     "postinstall": "node ./decorate-angular-cli.js && ngcc --properties es2015 browser module main",
     "start": "nx serve",
+    "start:blockchain-explorer": "npm start -- blockchain-explorer",
+    "start:blockchain-explorer-api": "npm start -- api",
+    "start:blockchain-server": "npm start -- blockchain-server",
     "build": "nx build",
-    "test": "nx test"
+    "test": "nx test",
+    "test:lib:blockchain": "npm test -- blockchain"
   },
   "private": true,
   "dependencies": {
@@ -23,9 +27,12 @@
     "@nestjs/core": "^7.0.0",
     "@nestjs/platform-express": "^7.0.0",
     "@nrwl/angular": "12.10.1",
+    "ramda": "^0.28.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "~6.6.0",
+    "sha256": "^0.2.0",
     "tslib": "^2.0.0",
+    "uuid": "^8.3.2",
     "zone.js": "~0.11.4"
   },
   "devDependencies": {
@@ -46,10 +53,14 @@
     "@nrwl/nest": "12.10.1",
     "@nrwl/node": "12.10.1",
     "@nrwl/nx-cloud": "latest",
+    "@nrwl/storybook": "^14.4.2",
     "@nrwl/tao": "12.10.1",
     "@nrwl/workspace": "12.10.1",
     "@types/jest": "27.0.2",
     "@types/node": "14.14.33",
+    "@types/ramda": "^0.28.15",
+    "@types/sha256": "^0.2.0",
+    "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "~4.31.1",
     "@typescript-eslint/parser": "~4.31.1",
     "cypress": "^8.3.0",

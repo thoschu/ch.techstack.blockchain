@@ -66,11 +66,33 @@
         }
       }
     },
+    "blockchain": {
+      "root": "libs/blockchain",
+      "sourceRoot": "libs/blockchain/src",
+      "projectType": "library",
+      "architect": {
+        "lint": {
+          "builder": "@nrwl/linter:eslint",
+          "outputs": ["{options.outputFile}"],
+          "options": {
+            "lintFilePatterns": ["libs/blockchain/**/*.ts"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/blockchain"],
+          "options": {
+            "jestConfig": "libs/blockchain/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "blockchain-explorer": {
       "projectType": "application",
       "root": "apps/blockchain-explorer",
       "sourceRoot": "apps/blockchain-explorer/src",
-      "prefix": "ch.techstack.blockchain",
+      "prefix": "blockchain-explorer",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
@@ -185,6 +207,79 @@
           "outputs": ["{options.outputFile}"],
           "options": {
             "lintFilePatterns": ["apps/blockchain-explorer-e2e/**/*.{js,ts}"]
+          }
+        }
+      }
+    },
+    "blockchain-interface": {
+      "root": "libs/blockchain-interface",
+      "sourceRoot": "libs/blockchain-interface/src",
+      "projectType": "library",
+      "architect": {
+        "lint": {
+          "builder": "@nrwl/linter:eslint",
+          "outputs": ["{options.outputFile}"],
+          "options": {
+            "lintFilePatterns": ["libs/blockchain-interface/**/*.ts"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/blockchain-interface"],
+          "options": {
+            "jestConfig": "libs/blockchain-interface/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "blockchain-server": {
+      "root": "apps/blockchain-server",
+      "sourceRoot": "apps/blockchain-server/src",
+      "projectType": "application",
+      "architect": {
+        "build": {
+          "builder": "@nrwl/node:build",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/apps/blockchain-server",
+            "main": "apps/blockchain-server/src/main.ts",
+            "tsConfig": "apps/blockchain-server/tsconfig.app.json",
+            "assets": ["apps/blockchain-server/src/assets"]
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "extractLicenses": true,
+              "inspect": false,
+              "fileReplacements": [
+                {
+                  "replace": "apps/blockchain-server/src/environments/environment.ts",
+                  "with": "apps/blockchain-server/src/environments/environment.prod.ts"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@nrwl/node:execute",
+          "options": {
+            "buildTarget": "blockchain-server:build"
+          }
+        },
+        "lint": {
+          "builder": "@nrwl/linter:eslint",
+          "outputs": ["{options.outputFile}"],
+          "options": {
+            "lintFilePatterns": ["apps/blockchain-server/**/*.ts"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "outputs": ["coverage/apps/blockchain-server"],
+          "options": {
+            "jestConfig": "apps/blockchain-server/jest.config.js",
+            "passWithNoTests": true
           }
         }
       }
