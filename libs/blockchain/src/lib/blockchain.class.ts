@@ -3,7 +3,7 @@ import { x2 } from 'sha256';
 
 import { IBlock, IBlockchain, ITransaction } from '@ch.techstack.blockchain/blockchain-interface';
 
-export class Blockchain implements IBlockchain<IBlock> {
+export class Blockchain implements IBlockchain<IBlock, ITransaction> {
   private readonly _chain: Array<IBlock>;
   private readonly _pendingTransactions: Array<ITransaction>;
 

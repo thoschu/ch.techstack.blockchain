@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import {IBlock, IBlockchain, ITransaction} from "@ch.techstack.blockchain/blockchain-interface";
+
+import { Blockchain } from "./blockchain.class";
 import { BlockchainService } from './blockchain.service';
-import {Blockchain} from "./blockchain.class";
 
 describe('BlockchainService', () => {
   let service: BlockchainService;
@@ -18,9 +20,9 @@ describe('BlockchainService', () => {
     expect(service).toBeDefined();
   });
 
-  it('provides blockchain lib', () => {
-    const testBlockchain: Blockchain = service.blockchain;
-    
-    expect(testBlockchain).toBeInstanceOf(Blockchain)
+  it('provides blockchain instance', () => {
+    const testBlockchain: IBlockchain<IBlock, ITransaction> = service.blockchain;
+
+    expect(testBlockchain).toBeInstanceOf(Blockchain);
   });
 });

@@ -11,7 +11,8 @@
     "start:blockchain-server": "npm start -- blockchain-server",
     "build": "nx build",
     "test": "nx test",
-    "test:lib:blockchain": "npm test -- blockchain"
+    "test:lib:blockchain": "npm test -- blockchain",
+    "test:app:blockchain-server": "npm test -- blockchain-server"
   },
   "private": true,
   "dependencies": {
