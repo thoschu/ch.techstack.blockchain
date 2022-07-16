@@ -14,6 +14,10 @@ export class Blockchain implements IBlockchain<IBlock, ITransaction> {
     this.init();
   }
 
+  private static tempHashStartsNotWith0000(tempHash: string): boolean {
+    return not(tempHash.startsWith('0000'));
+  }
+
   private init(): void {
     const genesisNonce = -1;
     const genesisPreviousBlockHash = '0';
@@ -59,7 +63,6 @@ export class Blockchain implements IBlockchain<IBlock, ITransaction> {
     const lastBlock: IBlock = this.getLastBlock();
     const indexOfLastBlock: number = lastBlock['index'];
     const blockIndexOfThisTransaction: number = inc(indexOfLastBlock);
-
     const newTransaction: ITransaction = {
       payload,
       sender,
@@ -85,7 +88,7 @@ export class Blockchain implements IBlockchain<IBlock, ITransaction> {
 
     do {
       tempHash = this.hashBlock(previousBlockHash, currentBlockData, ++nonce);
-    } while(not(tempHash.startsWith('0000')));
+    } while (Blockchain.tempHashStartsNotWith0000(tempHash));
 
     return nonce;
   }
