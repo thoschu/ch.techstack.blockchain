@@ -1,5 +1,5 @@
 import { clone, inc, last, length, not } from 'ramda';
-import { x2 } from 'sha256';
+import { x2 as sha256 } from 'sha256';
 
 import { IBlock, IBlockchain, ITransaction } from '@ch.techstack.blockchain/blockchain-interface';
 
@@ -11,17 +11,17 @@ export class Blockchain implements IBlockchain<IBlock, ITransaction> {
     this._chain = [];
     this._pendingTransactions = [];
 
-    this.init();
+    this._init();
   }
 
   private static tempHashStartsNotWith0000(tempHash: string): boolean {
     return not(tempHash.startsWith('0000'));
   }
 
-  private init(): void {
+  private _init(): void {
     const genesisNonce = -1;
     const genesisPreviousBlockHash = '0';
-    const genesisHash: string = x2('genesis');
+    const genesisHash = '0000';
 
     this.createNewBlock(genesisNonce, genesisPreviousBlockHash, genesisHash);
   }
@@ -75,11 +75,12 @@ export class Blockchain implements IBlockchain<IBlock, ITransaction> {
   }
 
   public hashBlock(previousBlockHash: string, currentBlockData: Array<ITransaction>, nonce: number): string {
-    const nonceString: string = nonce.toString();
+    const base = 10;
+    const nonceString: string = nonce.toString(base);
     const currentBlockDataString: string = JSON.stringify(currentBlockData);
     const dataAsString = `${previousBlockHash}${nonceString}${currentBlockDataString}`;
 
-    return x2(dataAsString);
+    return sha256(dataAsString);
   }
 
   public proofOfWork(previousBlockHash: string, currentBlockData: Array<ITransaction>): number {

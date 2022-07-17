@@ -13,10 +13,10 @@ export interface ITransaction {
   recipient: string;
 }
 
-export interface IBlockchain<B, T> {
+export interface IBlockchain<B, T, P = unknown> {
   createNewBlock(nonce: number, previousBlockHash: string, hash: string): B;
   getLastBlock(): B;
-  createNewTransaction(payload: unknown, sender: string, recipient: string): number;
+  createNewTransaction(payload: P, sender: string, recipient: string): number;
   hashBlock(previousBlockHash: string, currentBlockData: Array<T>, nonce: number): string;
   proofOfWork(previousBlockHash: string, currentBlockData: Array<T>): number;
   get chain(): Array<B>;

@@ -258,6 +258,28 @@
                   "with": "apps/blockchain-server/src/environments/environment.prod.ts"
                 }
               ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "inspect": true,
+              "fileReplacements": [
+                {
+                  "replace": "apps/blockchain-server/src/environments/environment.ts",
+                  "with": "apps/blockchain-server/src/environments/environment.dev.ts"
+                }
+              ]
+            },
+            "staging": {
+              "optimization": false,
+              "extractLicenses": true,
+              "inspect": true,
+              "fileReplacements": [
+                {
+                  "replace": "apps/blockchain-server/src/environments/environment.ts",
+                  "with": "apps/blockchain-server/src/environments/environment.stag.ts"
+                }
+              ]
             }
           }
         },

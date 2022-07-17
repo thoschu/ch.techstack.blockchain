@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  name: 'locale',
-  port: null
+  name: 'staging',
+  port: 8088
 };

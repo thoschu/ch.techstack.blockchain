@@ -1,4 +1,4 @@
-import { INestApplication, Logger } from '@nestjs/common';
+import {INestApplication, Logger, NestApplicationOptions} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import helmet from 'helmet';
@@ -9,7 +9,8 @@ import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
 
 (async () => {
-  const defaultPort = '4444';
+  const fallbackPort = '4444';
+  const defaultPort = environment.port || fallbackPort;
   const argv: Array<string> = process.argv;
   const args: Array<string> = argv.slice(2);
   const isPort: (arg: string) => boolean = arg => arg.startsWith('PORT');
@@ -18,7 +19,8 @@ import { environment } from './environments/environment';
   const pipeFn = pipe(filterFn, head, splitFn, last);
   const argsPort: unknown = tryCatch(pipeFn, always<string>(defaultPort))(args);
   const port: string = process.env.PORT || argsPort as string;
-  const app: INestApplication = await NestFactory.create(AppModule);
+  const options: NestApplicationOptions = { logger: true };
+  const app: INestApplication = await NestFactory.create(AppModule, options);
   const helmetFn: (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => void = helmet();
   const globalPrefix = 'api';
 
@@ -28,6 +30,6 @@ import { environment } from './environments/environment';
   await app.listen(port, () => {
     const environmentName: string = environment.name;
 
-    Logger.log(`Listening ${environmentName} at http://localhost:${port}/${globalPrefix}`);
+    Logger.log(`Listening ▶ ${environmentName} ◀ at http://localhost:${port}/${globalPrefix}`, 'Main');
   });
 })();
