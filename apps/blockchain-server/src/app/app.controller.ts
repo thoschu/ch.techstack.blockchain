@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Logger, Post, Req, Request, Res, Response } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Logger, Post, Req, Request, Res, Response } from '@nestjs/common';
+import { ApiOkResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
 import { Boom } from '@hapi/boom';
 
 import { v5 } from 'uuid';
@@ -6,7 +7,9 @@ import { v5 } from 'uuid';
 import { IBlock, IBlockchain, ITransaction } from "@ch.techstack.blockchain/blockchain-interface";
 
 import { AppService } from './app.service';
+import { CreateTransactionDto } from './transaction.entity';
 
+@ApiTags('Version 1')
 @Controller('v1')
 export class AppController {
   private static readonly nodeAddress: string = v5('#', '6fc2e23a-95d3-4004-be9b-28c044403004');
@@ -26,25 +29,29 @@ export class AppController {
     Logger.log(logMessage, className, true);
   }
 
+  @ApiNotFoundResponse({description: 'Boom error', isArray: false})
   @Get()
   @HttpCode(HttpStatus.NOT_FOUND)
   public notFound(@Req() request: Request): Boom<string> {
     return this.appService.notFound(request);
   }
 
+  @ApiOkResponse({ description: 'The blockchain'})
   @Get('blockchain')
   public getBlockchain(): IBlockchain<IBlock, ITransaction> {
     return this.appService.blockchain;
   }
 
+  @ApiCreatedResponse({description: 'The mineded Block'})
   @Get('mine')
   @HttpCode(HttpStatus.CREATED)
   public mineNewBlock(@Req() request: Request): { note: string, block: IBlock } {
     return this.appService.mineNewBlock(request);
   }
 
+  @ApiCreatedResponse({description: 'The transaction'})
   @Post('transaction')
-  public createNewTransactionAndReturnsBlockIndex(@Headers() headers: Headers, @Body() body: ITransaction): { note: string, index: number, body: ITransaction } {
-    return this.appService.createNewTransactionAndReturnsBlockIndex(headers, body);
+  public createNewTransactionAndReturnsBlockIndex(@Body() body: CreateTransactionDto): { note: string, index: number, body: ITransaction } {
+    return this.appService.createNewTransactionAndReturnsBlockIndex(body);
   }
 }

@@ -18,7 +18,7 @@ describe('Blockchain', () => {
     it('genesis block has valid hash', () => {
       const testBlock: IBlock = testBlockchain.getLastBlock();
       const hashFromGenesisBlock: string = testBlock.hash;
-      const genesisHash: string = x2('genesis');
+      const genesisHash = '0000';
 
       expect(hashFromGenesisBlock).toBe(genesisHash);
     });

@@ -16,6 +16,11 @@ export class AppService {
   }
 
   public get blockchain(): IBlockchain<IBlock, ITransaction> {
+    const note = "Blockchain deliverd";
+    const logMessage = `${note}`;
+
+    Logger.log(logMessage, this.constructor.name, true);
+
     return this._blockchain;
   }
 
@@ -51,7 +56,7 @@ export class AppService {
     };
   }
 
-  public createNewTransactionAndReturnsBlockIndex(headers: Headers, body: ITransaction): { note: string, index: number, body: ITransaction } {
+  public createNewTransactionAndReturnsBlockIndex(body: ITransaction): { note: string, index: number, body: ITransaction } {
     const { payload, sender, recipient }: ITransaction = body;
     const index: number = this._blockchain.createNewTransaction(payload, sender, recipient);
     const id: number = this._blockchain.pendingTransactions.length;

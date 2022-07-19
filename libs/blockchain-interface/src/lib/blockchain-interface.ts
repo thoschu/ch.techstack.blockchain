@@ -8,15 +8,15 @@ export interface IBlock {
 }
 
 export interface ITransaction {
-  payload: unknown;
+  payload: string;
   sender: string;
   recipient: string;
 }
 
-export interface IBlockchain<B, T, P = unknown> {
+export interface IBlockchain<B, T> {
   createNewBlock(nonce: number, previousBlockHash: string, hash: string): B;
   getLastBlock(): B;
-  createNewTransaction(payload: P, sender: string, recipient: string): number;
+  createNewTransaction(payload: string, sender: string, recipient: string): number;
   hashBlock(previousBlockHash: string, currentBlockData: Array<T>, nonce: number): string;
   proofOfWork(previousBlockHash: string, currentBlockData: Array<T>): number;
   get chain(): Array<B>;

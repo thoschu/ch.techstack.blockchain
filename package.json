@@ -23,7 +23,9 @@
     "run:blockchain-explorer-api": "node dist/apps/api/main.js",
     "run:blockchain-server": "node dist/apps/blockchain-server/main.js",
     "clean:node_modules": "rimraf ./node_modules",
-    "clean:dist": "rimraf ./dist"
+    "clean:dist": "rimraf ./dist",
+    "loadtest:blockchain": "npx loadtest http://localhost:4444/api/v1/blockchain -n 1000 -c 100",
+    "loadtest:mine": "npx loadtest http://localhost:4444/api/v1/mine -n 1000 -c 100"
   },
   "private": true,
   "dependencies": {
@@ -38,13 +40,19 @@
     "@hapi/boom": "^10.0.0",
     "@nestjs/common": "^7.0.0",
     "@nestjs/core": "^7.0.0",
+    "@nestjs/jwt": "^8.0.1",
+    "@nestjs/passport": "^8.2.2",
     "@nestjs/platform-express": "^7.0.0",
+    "@nestjs/swagger": "^4.8.0",
     "@nrwl/angular": "12.10.1",
     "helmet": "^5.1.0",
+    "passport": "^0.6.0",
+    "passport-jwt": "^4.0.0",
     "ramda": "^0.28.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "~6.6.0",
     "sha256": "^0.2.0",
+    "swagger-ui-express": "^4.5.0",
     "tslib": "^2.0.0",
     "uuid": "^8.3.2",
     "zone.js": "~0.11.4"

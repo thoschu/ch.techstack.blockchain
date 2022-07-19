@@ -59,7 +59,7 @@ export class Blockchain implements IBlockchain<IBlock, ITransaction> {
     return last<IBlock>(this._chain);
   }
 
-  public createNewTransaction(payload: unknown, sender: string, recipient: string): number {
+  public createNewTransaction(payload: string, sender: string, recipient: string): number {
     const lastBlock: IBlock = this.getLastBlock();
     const indexOfLastBlock: number = lastBlock['index'];
     const blockIndexOfThisTransaction: number = inc(indexOfLastBlock);
