@@ -8,6 +8,7 @@ import { Headers } from "express";
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CreateTransactionDto } from './transaction.entity';
 
 describe('app:blockchain-server AppController', () => {
   let app: TestingModule;
@@ -76,9 +77,12 @@ describe('app:blockchain-server AppController', () => {
     });
 
     it('createNewTransactionAndReturnsBlockIndex', () => {
-      const headers: Headers = { } as Headers;
-      const body: ITransaction = { } as ITransaction;
-      const transaction: { note: string, index: number, body: ITransaction } = appController.createNewTransactionAndReturnsBlockIndex(headers, body);
+      const body: CreateTransactionDto = {
+        "payload": "test-payload",
+        "sender": "John Doe",
+        "recipient": "Jane Roe"
+      };
+      const transaction: { note: string, index: number, body: ITransaction } = appController.createNewTransactionAndReturnsBlockIndex(body);
       const transactionIndexKeys: Array<string> = Object.keys(transaction);
       const transactionKeys = ['note', 'index', 'body'];
 

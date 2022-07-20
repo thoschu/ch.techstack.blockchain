@@ -49,6 +49,9 @@
     },
     "blockchain-server": {
       "tags": []
+    },
+    "mysql-nestjs-connector": {
+      "tags": []
     }
   }
 }

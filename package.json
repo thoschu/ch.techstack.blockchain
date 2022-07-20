@@ -24,8 +24,10 @@
     "run:blockchain-server": "node dist/apps/blockchain-server/main.js",
     "clean:node_modules": "rimraf ./node_modules",
     "clean:dist": "rimraf ./dist",
-    "loadtest:blockchain": "npx loadtest http://localhost:4444/api/v1/blockchain -n 1000 -c 100",
-    "loadtest:mine": "npx loadtest http://localhost:4444/api/v1/mine -n 1000 -c 100"
+    "loadtest:blockchain": "npx loadtest -n 1000 -c 100 -m GET http://localhost:4444/api/v1/blockchain",
+    "loadtest:mine": "npx loadtest -n 1000 -c 100 -m GET http://localhost:4444/api/v1/mine",
+    "loadtest:transaction": "npx loadtest -m POST -T 'application/json' -t 2 -c 10 --rps 10 -P '{\"payload\": \"loadtest-test-payload\", \"sender\": \"John\", \"recipient\": \"Jane\"}' http://localhost:4444/api/v1/transaction/",
+    "docker:mysql": "docker run --name mysql -v db:/docker-entrypoint-initdb.d -e MYSQL_ROOT_PASSWORD=password -e MYSQL_ROOT_HOST=% -e MYSQL_DATABASE=Blockchain -p 3306:3306 -d --rm mysql:latest"
   },
   "private": true,
   "dependencies": {
@@ -44,8 +46,10 @@
     "@nestjs/passport": "^8.2.2",
     "@nestjs/platform-express": "^7.0.0",
     "@nestjs/swagger": "^4.8.0",
+    "@nestjs/typeorm": "^7.1.5",
     "@nrwl/angular": "12.10.1",
     "helmet": "^5.1.0",
+    "mysql2": "^2.3.3",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.0",
     "ramda": "^0.28.0",
@@ -54,6 +58,7 @@
     "sha256": "^0.2.0",
     "swagger-ui-express": "^4.5.0",
     "tslib": "^2.0.0",
+    "typeorm": "^0.2.7",
     "uuid": "^8.3.2",
     "zone.js": "~0.11.4"
   },
@@ -91,6 +96,7 @@
     "eslint-plugin-cypress": "^2.10.3",
     "jest": "27.2.3",
     "jest-preset-angular": "10.0.1",
+    "loadtest": "^5.2.0",
     "prettier": "^2.3.1",
     "rimraf": "^3.0.2",
     "ts-jest": "27.0.5",

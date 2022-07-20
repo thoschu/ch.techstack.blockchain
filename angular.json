@@ -305,6 +305,28 @@
           }
         }
       }
+    },
+    "mysql-nestjs-connector": {
+      "root": "libs/mysql-nestjs-connector",
+      "sourceRoot": "libs/mysql-nestjs-connector/src",
+      "projectType": "library",
+      "architect": {
+        "lint": {
+          "builder": "@nrwl/linter:eslint",
+          "outputs": ["{options.outputFile}"],
+          "options": {
+            "lintFilePatterns": ["libs/mysql-nestjs-connector/**/*.ts"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/mysql-nestjs-connector"],
+          "options": {
+            "jestConfig": "libs/mysql-nestjs-connector/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
     }
   },
   "cli": {
