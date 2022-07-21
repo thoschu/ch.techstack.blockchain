@@ -15,10 +15,16 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@ch.techstack.blockchain/api-interfaces": ["libs/api-interfaces/src/index.ts"],
+      "@ch.techstack.blockchain/api-interfaces": [
+        "libs/api-interfaces/src/index.ts"
+      ],
       "@ch.techstack.blockchain/blockchain": ["libs/blockchain/src/index.ts"],
-      "@ch.techstack.blockchain/blockchain-interface": ["libs/blockchain-interface/src/index.ts"],
-      "@ch.techstack.blockchain/mysql-nestjs-connector": ["libs/mysql-nestjs-connector/src/index.ts"]
+      "@ch.techstack.blockchain/blockchain-interface": [
+        "libs/blockchain-interface/src/index.ts"
+      ],
+      "@ch.techstack.blockchain/mysql-nestjs-connector": [
+        "libs/mysql-nestjs-connector/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

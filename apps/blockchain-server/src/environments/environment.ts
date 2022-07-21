@@ -7,5 +7,6 @@ export const environment = {
     database: 'Blockchain',
     username: 'root',
     password: 'password'
-  }
+  },
+  jwtSecret: 'jwt-secret-tom-s-hamburg'
 };

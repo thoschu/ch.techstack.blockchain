@@ -1,23 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Boom } from "@hapi/boom";
 
-import { BlockchainModule } from "@ch.techstack.blockchain/blockchain";
+import { BlockchainModule, BlockchainService } from '@ch.techstack.blockchain/blockchain';
 import { IBlock, IBlockchain, ITransaction } from "@ch.techstack.blockchain/blockchain-interface";
 
-import { Headers } from "express";
+import { Headers } from 'express';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CreateTransactionDto } from './transaction.entity';
+import {
+  MysqlNestjsConnectorModule,
+  MysqlNestjsConnectorService
+} from '@ch.techstack.blockchain/mysql-nestjs-connector';
+import { JwtService } from '@nestjs/jwt';
 
 describe('app:blockchain-server AppController', () => {
   let app: TestingModule;
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
-      imports: [BlockchainModule],
+      imports: [BlockchainModule, MysqlNestjsConnectorModule],
       controllers: [AppController],
-      providers: [AppService],
+      providers: [AppService, MysqlNestjsConnectorService, JwtService, BlockchainService],
     }).compile();
   });
 

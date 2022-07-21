@@ -1,6 +1,6 @@
 import { isMaster, fork, on, Cluster, Worker, isWorker, setupMaster, ClusterSettings } from 'cluster';
 import { CpuInfo, cpus } from 'os';
-import { INestApplication, Logger, NestApplicationOptions } from '@nestjs/common';
+import { INestApplication, Logger, NestApplicationOptions, InternalServerErrorException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { SwaggerModule, DocumentBuilder, OpenAPIObject } from '@nestjs/swagger';
@@ -72,7 +72,7 @@ if (isMaster) {
     });
   })();
 } else {
-  const error: Error = new Error('Something went wrong');
+  const error: InternalServerErrorException = new InternalServerErrorException('Something went wrong');
 
   Logger.log(error.stack, 'Main');
 

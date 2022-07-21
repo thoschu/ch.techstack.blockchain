@@ -5,8 +5,8 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 @Entity('User')
 export class UserDto {
   @ApiProperty({
-    description: 'id',
-    example: 'Tom S.'
+    description: 'id - primary key',
+    example: '1'
   })
   @PrimaryGeneratedColumn()
   public id: number;
@@ -20,7 +20,7 @@ export class UserDto {
 
   @ApiProperty({
     description: 'password',
-    example: 'foobar'
+    example: '*****'
   })
   @Column()
   public password: string;
