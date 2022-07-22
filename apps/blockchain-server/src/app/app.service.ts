@@ -6,9 +6,7 @@ import { __, prop } from "ramda";
 
 import { IBlock, IBlockchain, ITransaction } from '@ch.techstack.blockchain/blockchain-interface';
 import { BlockchainService } from "@ch.techstack.blockchain/blockchain";
-import { MysqlNestjsConnectorService } from '@ch.techstack.blockchain/mysql-nestjs-connector';
-
-import { UserDto } from 'libs/mysql-nestjs-connector/src/lib/mysql-nestjs-connector.entity';
+// import { MysqlNestjsConnectorService, UserDto } from '@ch.techstack.blockchain/mysql-nestjs-connector';
 
 @Injectable()
 export class AppService {
@@ -16,14 +14,14 @@ export class AppService {
 
   constructor(
     private readonly blockchainService: BlockchainService,
-    private readonly mysqlNestjsConnectorService: MysqlNestjsConnectorService
+    // private readonly mysqlNestjsConnectorService: MysqlNestjsConnectorService
   ) {
     this._blockchain = blockchainService.blockchain;
 
-    this.mysqlNestjsConnectorService.validateUser('thoschu', 'password')
-      .then((result: Pick<UserDto, 'id' | 'username'>) => {
-        console.log(result);
-      });
+    // this.mysqlNestjsConnectorService.validateUser('thoschu', 'password')
+    //   .then((result: Pick<UserDto, 'id' | 'username'>) => {
+    //     console.log(result);
+    //   });
   }
 
   public get blockchain(): IBlockchain<IBlock, ITransaction> {

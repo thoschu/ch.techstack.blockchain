@@ -1,6 +1,6 @@
-CREATE DATABASE 'Blockchain';
+CREATE DATABASE IF NOT EXISTS Blockchain;
 
-USE 'Blockchain';
+USE Blockchain;
 
 CREATE TABLE User (
   id INT NOT NULL AUTO_INCREMENT,
@@ -10,4 +10,3 @@ CREATE TABLE User (
 ) ENGINE=INNODB DEFAULT CHARSET=UTF8MB4;
 
 INSERT INTO User (username, password) VALUES ('thoschu', 'password');
-

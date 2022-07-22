@@ -26,10 +26,10 @@
     "clean:dist": "rimraf ./dist",
     "loadtest:blockchain": "npx loadtest -n 1000 -c 100 -m GET http://localhost:4444/api/v1/blockchain",
     "loadtest:mine": "npx loadtest -n 1000 -c 100 -m GET http://localhost:4444/api/v1/mine",
-    "loadtest:transaction": "ts-node ./tools/loadtest/blockchain-server/transaction.ts",
-    "loadtest:transaction2": "npx loadtest -m POST -T 'application/json' -t 2 -c 10 --rps 10 -P '{\"payload\": \"loadtest-test-payload\", \"sender\": \"John\", \"recipient\": \"Jane\"}' http://localhost:4444/api/v1/transaction/",
-    "docker:run:mysql": "cross-env REMOVE=\"--rm=false\" MYSQL_ROOT_PASSWORD=\"-e MYSQL_ROOT_PASSWORD=password\" MYSQL_ROOT_HOST=\"-e MYSQL_ROOT_HOST=%\" MYSQL_DATABASE=\"-e MYSQL_DATABASE=Blockchain\" npm run docker:cross-env-shell:run:mysql",
-    "docker:cross-env-shell:run:mysql": "cross-env-shell \"docker run --name mysql --restart=always -v db:/docker-entrypoint-initdb.d $MYSQL_ROOT_PASSWORD $MYSQL_ROOT_HOST $MYSQL_DATABASE -p 3306:3306 -d $REMOVE mysql:latest\""
+    "loadtest:transaction": "ts-node ./tools/loadtest/blockchain-server/transaction.ts --maxRequests 10",
+    "docker:run:mysql:unix":"cross-env REMOVE=\"--rm=false\" INIT_DB=\"${PWD}/tools/db:/docker-entrypoint-initdb.d\" MYSQL_ROOT_PASSWORD=\"-e MYSQL_ROOT_PASSWORD=password\" MYSQL_ROOT_HOST=\"-e MYSQL_ROOT_HOST=%\" MYSQL_DATABASE=\"-e MYSQL_DATABASE=Blockchain\" npm run docker:cross-env-shell:run:mysql",
+    "docker:run:mysql:windws": "cross-env REMOVE=\"--rm=false\" INIT_DB=\"%cd%/tools/db:/docker-entrypoint-initdb.d\" MYSQL_ROOT_PASSWORD=\"-e MYSQL_ROOT_PASSWORD=password\" MYSQL_ROOT_HOST=\"-e MYSQL_ROOT_HOST=%\" MYSQL_DATABASE=\"-e MYSQL_DATABASE=Blockchain\" npm run docker:cross-env-shell:run:mysql",
+    "docker:cross-env-shell:run:mysql": "cross-env-shell \"docker run --name mysql2 --restart always -v $INIT_DB $MYSQL_ROOT_PASSWORD $MYSQL_ROOT_HOST $MYSQL_DATABASE -p 3306:3306 -d $REMOVE mysql:latest\""
   },
   "private": true,
   "dependencies": {

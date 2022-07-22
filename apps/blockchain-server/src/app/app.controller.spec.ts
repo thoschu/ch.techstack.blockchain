@@ -13,16 +13,33 @@ import {
   MysqlNestjsConnectorModule,
   MysqlNestjsConnectorService
 } from '@ch.techstack.blockchain/mysql-nestjs-connector';
-import { JwtService } from '@nestjs/jwt';
+// import { JwtService } from '@nestjs/jwt';
+import { environment } from '../environments/environment';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+
+import { UserDto } from '@ch.techstack.blockchain/mysql-nestjs-connector';
 
 describe('app:blockchain-server AppController', () => {
   let app: TestingModule;
 
   beforeAll(async () => {
+  const jwtSecret = environment.jwtSecret;
+  const mysql = environment.mysql;
+  const options: TypeOrmModuleOptions = {
+      type: 'mysql',
+      host: mysql.url,
+      port: mysql.port,
+      username: mysql.username,
+      password: mysql.password,
+      database: mysql.database,
+      entities: [],
+      synchronize: false
+    };
+
     app = await Test.createTestingModule({
-      imports: [BlockchainModule, MysqlNestjsConnectorModule],
+      imports: [BlockchainModule, MysqlNestjsConnectorModule.forRoot(options, jwtSecret), TypeOrmModule.forFeature([UserDto])],
       controllers: [AppController],
-      providers: [AppService, MysqlNestjsConnectorService, JwtService, BlockchainService],
+      providers: [AppService, MysqlNestjsConnectorService],
     }).compile();
   });
 
