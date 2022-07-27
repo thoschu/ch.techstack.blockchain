@@ -1,0 +1,79 @@
+#---
+#apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: nginx-pod
+#  labels:
+#    app: ngnix
+#spec:
+#  containers:
+#    - name: nginx-container
+#      image: nginx
+#      ports:
+#        - containerPort: 80
+#          name: nginx_port
+#      volumeMounts:
+#        - mountPath: /usr/nginx/html
+#          name: nginx-vol
+#    - name: sidecar-container
+#      image: curlimages/curl
+#      command: ["/bin/sh"]
+#      args:
+#        - '-c'
+#        - 'echo Hello from the sidecar container; sleep 300'
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: nginx-service
+#  labels:
+#    service: ngnix
+#spec:
+#  ports:
+#    - port: 8888
+#      targetPort: nginx_port
+#      protocol: TCP
+#  selector:
+#    app: nginx
+#  type: LoadBalancer
+#---
+#apiVersion: v1
+#kind: ReplicationController
+#metadata:
+#  name: blockchain-rc
+#spec:
+#  replicas: 5
+#  selector:
+#    app: ngnix
+#  template:
+#    metadata:
+#      name: ngnix
+#      labels:
+#        app: ngnix
+#    spec:
+#      containers:
+#        - name: ngnix-container
+#          image: nginx
+#          ports:
+#            - containerPort: 80
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80

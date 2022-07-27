@@ -1,6 +1,6 @@
 import { loadTest, LoadTestOptions, LoadTestResult, Operation } from 'loadtest';
 import { from, Observable, Subscription } from 'rxjs';
-import { drop, Lens, lensProp, pipe, splitEvery, view } from 'ramda';
+import { drop, lensProp, splitEvery, view } from 'ramda';
 
 (() => {
   const allArgs: Array<string> = process.argv;
@@ -35,13 +35,11 @@ import { drop, Lens, lensProp, pipe, splitEvery, view } from 'ramda';
     const fromArray$: Observable<Operation | LoadTestResult> = from(array);
 
     if (!error) {
-      // const subscription: Subscription = fromArray$.subscribe((x: Operation | LoadTestResult) => console.log(x));
+      const subscription: Subscription = fromArray$.subscribe((res: Operation | LoadTestResult) => console.log(res));
 
-      // subscription.unsubscribe();
+      subscription.unsubscribe();
     } else {
       return console.error('Got an error: %s', error);
     }
   });
 })();
-
-

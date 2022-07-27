@@ -18,6 +18,8 @@
     "test": "npm run test:lib:blockchain && npm run test:app:blockchain-server",
     "test:lib:blockchain": "nx test blockchain",
     "test:lib:blockchain:watch": "npm run test:lib:blockchain -- --watch",
+    "test:lib:auth": "nx test auth",
+    "test:lib:auth:watch": "npm run test:lib:auth -- --watch",
     "test:app:blockchain-server": "nx test -- blockchain-server",
     "test:app:blockchain-server:watch": "npm run test:app:blockchain-server -- --watch",
     "run:blockchain-explorer-api": "node dist/apps/api/main.js",
@@ -27,9 +29,10 @@
     "loadtest:blockchain": "npx loadtest -n 1000 -c 100 -m GET http://localhost:4444/api/v1/blockchain",
     "loadtest:mine": "npx loadtest -n 1000 -c 100 -m GET http://localhost:4444/api/v1/mine",
     "loadtest:transaction": "ts-node ./tools/loadtest/blockchain-server/transaction.ts --maxRequests 10",
-    "docker:run:mysql:unix":"cross-env REMOVE=\"--rm=false\" INIT_DB=\"${PWD}/tools/db:/docker-entrypoint-initdb.d\" MYSQL_ROOT_PASSWORD=\"-e MYSQL_ROOT_PASSWORD=password\" MYSQL_ROOT_HOST=\"-e MYSQL_ROOT_HOST=%\" MYSQL_DATABASE=\"-e MYSQL_DATABASE=Blockchain\" npm run docker:cross-env-shell:run:mysql",
+    "docker:run:mysql:unix": "cross-env REMOVE=\"--rm=false\" INIT_DB=\"${PWD}/tools/db:/docker-entrypoint-initdb.d\" MYSQL_ROOT_PASSWORD=\"-e MYSQL_ROOT_PASSWORD=password\" MYSQL_ROOT_HOST=\"-e MYSQL_ROOT_HOST=%\" MYSQL_DATABASE=\"-e MYSQL_DATABASE=Blockchain\" npm run docker:cross-env-shell:run:mysql",
     "docker:run:mysql:windws": "cross-env REMOVE=\"--rm=false\" INIT_DB=\"%cd%/tools/db:/docker-entrypoint-initdb.d\" MYSQL_ROOT_PASSWORD=\"-e MYSQL_ROOT_PASSWORD=password\" MYSQL_ROOT_HOST=\"-e MYSQL_ROOT_HOST=%\" MYSQL_DATABASE=\"-e MYSQL_DATABASE=Blockchain\" npm run docker:cross-env-shell:run:mysql",
-    "docker:cross-env-shell:run:mysql": "cross-env-shell \"docker run --name mysql2 --restart always -v $INIT_DB $MYSQL_ROOT_PASSWORD $MYSQL_ROOT_HOST $MYSQL_DATABASE -p 3306:3306 -d $REMOVE mysql:latest\""
+    "docker:cross-env-shell:run:mysql": "cross-env-shell \"docker run --name mysql2 --restart always -v $INIT_DB $MYSQL_ROOT_PASSWORD $MYSQL_ROOT_HOST $MYSQL_DATABASE -p 3306:3306 -d $REMOVE mysql:latest\"",
+    "prototype": "ts-node tools/prototype/prototype.ts"
   },
   "private": true,
   "dependencies": {

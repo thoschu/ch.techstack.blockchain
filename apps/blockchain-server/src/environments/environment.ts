@@ -1,7 +1,8 @@
 export const environment = {
   production: false,
   name: 'locale',
-  port: null,  mysql: {
+  port: null,
+  mysql: {
     port: 3306,
     url: 'localhost',
     database: 'Blockchain',

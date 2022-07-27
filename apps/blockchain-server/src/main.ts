@@ -1,13 +1,15 @@
-import { isMaster, fork, on, Cluster, Worker, isWorker, setupMaster, ClusterSettings } from 'cluster';
+import { isMaster, fork, on, Worker, isWorker, setupMaster, ClusterSettings } from 'cluster';
 import { CpuInfo, cpus } from 'os';
+import { IncomingMessage, ServerResponse } from 'http';
+
 import { INestApplication, Logger, NestApplicationOptions, InternalServerErrorException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-
 import { SwaggerModule, DocumentBuilder, OpenAPIObject } from '@nestjs/swagger';
 
 import helmet from 'helmet';
-import { IncomingMessage, ServerResponse } from "http";
 import { always, filter, head, last, pipe, split, tryCatch } from 'ramda';
+import { from, fromEvent, Observable, Subscriber } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
@@ -36,7 +38,7 @@ if (isMaster) {
     Logger.log(`Worker ▶ ${worker.process.pid} died. Let's fork another worker! Worker ▶ ${w.id} restarted. ${code}`, `Main ${signal}`);
   });
 } else if(isWorker) {
-  (async () => {
+  (() => {
     const fallbackPort = '4444';
     const defaultPort = environment.port || fallbackPort;
     const argv: Array<string> = process.argv;
@@ -48,27 +50,46 @@ if (isMaster) {
     const argsPort: unknown = tryCatch(pipeFn, always<string>(defaultPort))(args);
     const port: string = process.env.PORT || argsPort as string;
     const options: NestApplicationOptions = { logger: true };
-    const app: INestApplication = await NestFactory.create(AppModule, options);
     const helmetFn: (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => void = helmet();
     const globalPrefix = 'api';
-    const config: Omit<OpenAPIObject, 'paths' | 'components'> = new DocumentBuilder()
-      .setTitle('Blockchain')
-      .setDescription('API description')
-      .setVersion('1.0')
-      .setLicense('MIT', 'https://opensource.org/licenses/MIT')
-      .addTag('blockchain')
-      .build();
 
-    const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('swagger', app, document);
+    const observable$: Observable<INestApplication> = from<Promise<INestApplication>>(NestFactory.create(AppModule, options));
 
-    app.use(helmetFn);
-    app.setGlobalPrefix(globalPrefix);
+    observable$.pipe(
+      tap((app: INestApplication) => {
+        const mitUrl = 'https://opensource.org/licenses/MIT';
+        const config: Omit<OpenAPIObject, 'paths' | 'components'> = new DocumentBuilder()
+          .setTitle('Blockchain')
+          .setDescription('API description')
+          .setVersion('1.0')
+          .setLicense('MIT', mitUrl)
+          .addTag('blockchain')
+          .build(),
+        document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 
-    await app.listen(port, () => {
+        SwaggerModule.setup('swagger', app, document);
+      }),
+      tap((app: INestApplication) => {
+        app.use(helmetFn);
+      }),
+      tap((app: INestApplication) => {
+        app.setGlobalPrefix(globalPrefix);
+      })
+    ).subscribe((app: INestApplication) => {
       const environmentName: string = environment.name;
 
-      Logger.log(`Listening ▶ ${environmentName} ◀ at http://localhost:${port}/${globalPrefix}`, 'Main');
+      from(
+        app.listen(port, () => {
+          const logMessage = `Listening ▶ ${environmentName} ◀ at http://localhost:${port}/${globalPrefix}`;
+
+          Logger.log(logMessage, 'Main');
+        })
+      ).subscribe(res => {
+        fromEvent(res, 'request').subscribe(([req, res]) => {
+          // console.log(Object.keys(req));
+          console.log(req.url);
+        });
+      });
     });
   })();
 } else {

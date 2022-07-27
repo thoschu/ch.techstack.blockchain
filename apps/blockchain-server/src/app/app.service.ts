@@ -6,22 +6,13 @@ import { __, prop } from "ramda";
 
 import { IBlock, IBlockchain, ITransaction } from '@ch.techstack.blockchain/blockchain-interface';
 import { BlockchainService } from "@ch.techstack.blockchain/blockchain";
-// import { MysqlNestjsConnectorService, UserDto } from '@ch.techstack.blockchain/mysql-nestjs-connector';
 
 @Injectable()
 export class AppService {
   private readonly _blockchain: IBlockchain<IBlock, ITransaction>;
 
-  constructor(
-    private readonly blockchainService: BlockchainService,
-    // private readonly mysqlNestjsConnectorService: MysqlNestjsConnectorService
-  ) {
+  constructor(private readonly blockchainService: BlockchainService,) {
     this._blockchain = blockchainService.blockchain;
-
-    // this.mysqlNestjsConnectorService.validateUser('thoschu', 'password')
-    //   .then((result: Pick<UserDto, 'id' | 'username'>) => {
-    //     console.log(result);
-    //   });
   }
 
   public get blockchain(): IBlockchain<IBlock, ITransaction> {
@@ -56,8 +47,9 @@ export class AppService {
     const userAgent: Headers[keyof Headers] = AppService.fetchUserAgentHeader(request);
     const blockString: string = JSON.stringify(block);
     const logMessage = `${note} ${blockString} by ${userAgent}`;
+    const className: string = this.constructor.name;
 
-    Logger.log(logMessage, this.constructor.name, true);
+    Logger.log(logMessage, className, true);
 
     return {
       note,

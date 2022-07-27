@@ -1,29 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+
 import { Boom } from "@hapi/boom";
 
-import { BlockchainModule, BlockchainService } from '@ch.techstack.blockchain/blockchain';
+import { BlockchainModule } from '@ch.techstack.blockchain/blockchain';
 import { IBlock, IBlockchain, ITransaction } from "@ch.techstack.blockchain/blockchain-interface";
-
-import { Headers } from 'express';
+import { MysqlNestjsConnectorModule, MysqlNestjsConnectorService } from '@ch.techstack.blockchain/mysql-nestjs-connector';
+import { UserDto } from '@ch.techstack.blockchain/mysql-nestjs-connector';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CreateTransactionDto } from './transaction.entity';
-import {
-  MysqlNestjsConnectorModule,
-  MysqlNestjsConnectorService
-} from '@ch.techstack.blockchain/mysql-nestjs-connector';
-// import { JwtService } from '@nestjs/jwt';
-import { environment } from '../environments/environment';
-import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-import { UserDto } from '@ch.techstack.blockchain/mysql-nestjs-connector';
+import { environment } from '../environments/environment';
 
 describe('app:blockchain-server AppController', () => {
   let app: TestingModule;
 
   beforeAll(async () => {
-  const jwtSecret = environment.jwtSecret;
   const mysql = environment.mysql;
   const options: TypeOrmModuleOptions = {
       type: 'mysql',
@@ -37,7 +31,7 @@ describe('app:blockchain-server AppController', () => {
     };
 
     app = await Test.createTestingModule({
-      imports: [BlockchainModule, MysqlNestjsConnectorModule.forRoot(options, jwtSecret), TypeOrmModule.forFeature([UserDto])],
+      imports: [BlockchainModule, MysqlNestjsConnectorModule.forRoot(options), TypeOrmModule.forFeature([UserDto])],
       controllers: [AppController],
       providers: [AppService, MysqlNestjsConnectorService],
     }).compile();

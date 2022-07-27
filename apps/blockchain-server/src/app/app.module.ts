@@ -3,6 +3,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import { BlockchainModule } from '@ch.techstack.blockchain/blockchain';
 import { MysqlNestjsConnectorModule } from '@ch.techstack.blockchain/mysql-nestjs-connector';
+import { AuthModule } from '@ch.techstack.blockchain/auth';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -18,13 +19,17 @@ type MySqlConfig = Required<{
 }>;
 
 @Module({
-  imports: [BlockchainModule, MysqlNestjsConnectorModule.forRoot(AppModule.options, AppModule.jwtSecret)],
+  imports: [
+    BlockchainModule,
+    MysqlNestjsConnectorModule.forRoot(AppModule.options),
+    AuthModule.forRoot(AppModule.jwtSecret)
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {
+  private static readonly jwtSecret: string = environment.jwtSecret;
   private static readonly mySqlConfig: MySqlConfig = environment.mysql;
-  private static readonly jwtSecret = environment.jwtSecret;
   private static readonly options: TypeOrmModuleOptions = {
     type: 'mysql',
     host: AppModule.mySqlConfig.url,

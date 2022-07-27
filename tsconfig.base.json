@@ -18,6 +18,7 @@
       "@ch.techstack.blockchain/api-interfaces": [
         "libs/api-interfaces/src/index.ts"
       ],
+      "@ch.techstack.blockchain/auth": ["libs/auth/src/index.ts"],
       "@ch.techstack.blockchain/blockchain": ["libs/blockchain/src/index.ts"],
       "@ch.techstack.blockchain/blockchain-interface": [
         "libs/blockchain-interface/src/index.ts"
