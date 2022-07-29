@@ -1,0 +1,10 @@
+{
+  "first": [
+    { "id": 1, "title": "test-server", "author": "Tom S." }
+  ],
+  "second": [
+    { "id": 1, "body": "some comment", "postId": 1 },
+    { "id": 2, "body": "next comment", "postId": 2 }
+  ],
+  "profile": { "name": "thoschu" }
+}

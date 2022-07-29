@@ -24,6 +24,7 @@
     "test:app:blockchain-server:watch": "npm run test:app:blockchain-server -- --watch",
     "run:blockchain-explorer-api": "node dist/apps/api/main.js",
     "run:blockchain-server": "node dist/apps/blockchain-server/main.js",
+    "clean": "concurrently \"npm run clean:dist\" \"npm run clean:node_modules\"",
     "clean:node_modules": "rimraf ./node_modules",
     "clean:dist": "rimraf ./dist",
     "loadtest:blockchain": "npx loadtest -n 1000 -c 100 -m GET http://localhost:4444/api/v1/blockchain",
@@ -32,7 +33,10 @@
     "docker:run:mysql:unix": "cross-env REMOVE=\"--rm=false\" INIT_DB=\"${PWD}/tools/db:/docker-entrypoint-initdb.d\" MYSQL_ROOT_PASSWORD=\"-e MYSQL_ROOT_PASSWORD=password\" MYSQL_ROOT_HOST=\"-e MYSQL_ROOT_HOST=%\" MYSQL_DATABASE=\"-e MYSQL_DATABASE=Blockchain\" npm run docker:cross-env-shell:run:mysql",
     "docker:run:mysql:windws": "cross-env REMOVE=\"--rm=false\" INIT_DB=\"%cd%/tools/db:/docker-entrypoint-initdb.d\" MYSQL_ROOT_PASSWORD=\"-e MYSQL_ROOT_PASSWORD=password\" MYSQL_ROOT_HOST=\"-e MYSQL_ROOT_HOST=%\" MYSQL_DATABASE=\"-e MYSQL_DATABASE=Blockchain\" npm run docker:cross-env-shell:run:mysql",
     "docker:cross-env-shell:run:mysql": "cross-env-shell \"docker run --name mysql2 --restart always -v $INIT_DB $MYSQL_ROOT_PASSWORD $MYSQL_ROOT_HOST $MYSQL_DATABASE -p 3306:3306 -d $REMOVE mysql:latest\"",
-    "prototype": "ts-node tools/prototype/prototype.ts"
+    "prototype": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"yellow,blue\" \"npm run prototype:json-server\" \"npm run prototype:wait:script\"",
+    "prototype:json-server": "npx json-server --watch ./tools/prototype/db.json",
+    "prototype:script": "ts-node ./tools/prototype/prototype.ts",
+    "prototype:wait:script": "npx wait-on tcp:3000 && npm run prototype:script"
   },
   "private": true,
   "dependencies": {
@@ -45,6 +49,7 @@
     "@angular/platform-browser-dynamic": "^12.2.0",
     "@angular/router": "^12.2.0",
     "@hapi/boom": "^10.0.0",
+    "@nestjs/axios": "^0.1.0",
     "@nestjs/common": "^7.0.0",
     "@nestjs/core": "^7.0.0",
     "@nestjs/jwt": "^8.0.1",
@@ -95,6 +100,7 @@
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "~4.31.1",
     "@typescript-eslint/parser": "~4.31.1",
+    "concurrently": "^7.3.0",
     "cross-env": "^7.0.3",
     "cypress": "^8.3.0",
     "eslint": "7.22.0",
