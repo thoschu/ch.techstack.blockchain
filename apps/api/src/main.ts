@@ -5,7 +5,7 @@ import { AppModule } from './app/app.module';
 
 import { environment } from './environments/environment';
 
-class Main implements Object {
+export default class Main implements Object {
   private static app: INestApplication;
   private static readonly globalPrefix = 'api';
   private static readonly defaultPort = 3333;
@@ -15,9 +15,7 @@ class Main implements Object {
   protected static readonly running: Main = new Main();
 
   constructor() {
-    Main.init();
-
-    console.log(environment);
+    Main.init().catch((error: Error) => Logger.error(error, this.toString(), Main.name));
   }
 
   private static async init(): Promise<void> {
@@ -35,7 +33,7 @@ class Main implements Object {
       const protocol = 'http';
       const logMessage = `Listening at ${protocol}://${Main.host}:${Main.port}/${ Main.globalPrefix}`;
 
-      Logger.log(logMessage);
+      Logger.log(logMessage, Main.name);
     });
   }
 }
