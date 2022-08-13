@@ -32,7 +32,8 @@ class Main implements Object {
 
   private static async listen() {
     await Main.app.listen(Main.port, () => {
-      const logMessage = `Listening at http://${Main.host}:${Main.port}/${ Main.globalPrefix}`;
+      const protocol = 'http';
+      const logMessage = `Listening at ${protocol}://${Main.host}:${Main.port}/${ Main.globalPrefix}`;
 
       Logger.log(logMessage);
     });
