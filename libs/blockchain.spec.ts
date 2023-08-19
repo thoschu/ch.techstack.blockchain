@@ -27,7 +27,15 @@ describe('Blockchain', (): void => {
         expect(hash).toEqual('cf5165adaa30b14cc4002697fb551198aaffcc4e18ada760ee06b2ebe7a52688151b35941021416800149da89ba799e5d92a33b10007fb782a6e9d6b038b159d');
     });
 
-    it('should create a block and retrieve the hash as string', (): void => {
+    it('should create a block and retrieve it', (): void => {
+        const block: BlockI = blockchain.createNewBlockInChain(375, '77dfa5te5d4d90d9892ee2325959afbe', '01dfae6e5d4d90d9892622325959afbe');
 
+        expect(block).toBeDefined();
     });
+
+    // it('should create a block in the blockchain', (): void => {
+    //     const block: BlockI = blockchain.createNewBlockInChain(375, '77dfa5te5d4d90d9892ee2325959afbe', '01dfae6e5d4d90d9892622325959afbe');
+    //
+    //     expect(block).toBeDefined();
+    // });
 });
