@@ -1,18 +1,40 @@
-import { createHash } from 'node:crypto';
+import { createHash, Hash } from 'node:crypto';
+import { inc } from 'ramda';
+
+import { BlockClass } from '@/block/block.class';
+import { BlockI } from '@/block/block.interface';
+import { TransactionI } from '@/transaction/transaction.interface';
+
 
 export class Blockchain {
-    private readonly user: string;
-    constructor(user?: string) {
-        this.user = user ?? 'Tom S.';
+    private readonly chain: BlockI[] = [];
+    private readonly sha512: Hash;
+    private newTransactions: TransactionI[] = [];
+
+    constructor() {
+        this.sha512 = createHash('sha512');
     }
 
-    public greeter(person: string = this.user): string {
-        return "Hello, " + person;
+    public getHash(block: BlockI): string {
+        const blockString: string = JSON.stringify(block);
+
+        return this.sha512.update(blockString).digest('hex'); //"base64" | "base64url" | "hex" | "binary"
     }
 
-    public getHash(): string {
-        const greeting: string = this.greeter(this.user);
+    public createNewBlockInChain(nonce: number, previousBlockHash: string, hash: string): BlockI {
+        const newBlock: BlockI = this.createNewBlock(nonce, previousBlockHash, hash);
 
-        return createHash('sha512').update(greeting).digest('hex')
+        this.newTransactions = [];
+        this.chain.push(newBlock);
+
+        return newBlock;
+    }
+
+    private createNewBlock(nonce: number, previousBlockHash: string, hash: string): BlockI {
+        const { length: chainLength }: { length: number }  = this.chain;
+        const index: number = inc(chainLength);
+        const transactions: TransactionI[] = this.newTransactions;
+
+        return new BlockClass(index, transactions, nonce, previousBlockHash, hash);
     }
 }

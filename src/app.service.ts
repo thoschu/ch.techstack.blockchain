@@ -1,18 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Blockchain } from '@/blockchain';
+import { BlockI } from '@/block/block.interface';
 
 @Injectable()
 export class AppService {
   private readonly blockchain: Blockchain;
 
   constructor() {
-    this.blockchain = new Blockchain('Thomas Schulte');
+    this.blockchain = new Blockchain();
   }
-  public getHash(): string {
-    return this.blockchain.getHash();
+  private getHash(block: BlockI): string {
+    return this.blockchain.getHash(block);
   }
 
   public getHello(): string {
-    return this.blockchain.greeter();
+    return `Tom S.`;
   }
 }
