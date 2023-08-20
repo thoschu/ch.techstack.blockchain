@@ -1,7 +1,7 @@
 import { TransactionI } from '@/transaction/transaction.interface';
 import { BlockI } from '@/block/block.interface';
 
-export class BlockClass implements BlockI {
+export class Block implements BlockI {
     private _index: number;
     private _timestamp: number;
     private _transactions: TransactionI[];
