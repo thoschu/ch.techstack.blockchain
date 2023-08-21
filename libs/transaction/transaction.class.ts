@@ -1,6 +1,14 @@
-import { UUID } from 'node:crypto';
+import { randomUUID, UUID } from 'node:crypto';
 import { TransactionI } from '@/transaction/transaction.interface';
-import {BlockI} from "@/block/block.interface";
+import { BlockI } from '@/block/block.interface';
+
+export type TransactionData = {
+    data?: unknown;
+    nonce?: number;
+    recipient: string;
+    sender: string;
+    value: unknown;
+}
 
 export class Transaction implements TransactionI {
     private _data: unknown;
@@ -10,25 +18,65 @@ export class Transaction implements TransactionI {
     private _sender: string;
     private _timestamp: number;
     private _value: unknown;
-    constructor() {}
+
+    constructor(transactionData: TransactionData) {
+        const { data, nonce, recipient, sender, value }: TransactionData = transactionData;
+
+        this.data = data;
+        this.id = randomUUID();
+        this.nonce = nonce;
+        this.recipient = recipient
+        this.sender = sender;
+        this.timestamp = Date.now();
+        this.value = value;
+    }
 
     public get data(): unknown {
         return this._data;
     }
-    public set data(data: unknown) {
+    protected set data(data: unknown) {
         this._data = data;
     }
 
     public get id(): UUID {
         return this._id;
     }
-    public set id(id: UUID) {
+    protected set id(id: UUID) {
         this._id = id;
     }
 
-    readonly nonce: number;
-    readonly recipient: string;
-    readonly sender: string;
-    readonly timestamp: number;
-    readonly value: unknown;
+    public get nonce(): number {
+        return this._nonce;
+    }
+    protected set nonce(nonce: number) {
+        this._nonce = nonce;
+    }
+
+    public get recipient(): string {
+        return this._recipient;
+    }
+    protected set recipient(recipient: string) {
+        this._recipient = recipient;
+    }
+
+    public get sender(): string {
+        return this._sender;
+    }
+    protected set sender(sender: string) {
+        this._sender = sender;
+    }
+
+    public get timestamp(): number {
+        return this._timestamp;
+    }
+    protected set timestamp(timestamp: number) {
+        this._timestamp = timestamp;
+    }
+
+    public get value(): unknown {
+        return this._value;
+    }
+    protected set value(value: unknown) {
+        this._value = value;
+    }
 }

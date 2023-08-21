@@ -10,7 +10,7 @@ export class AppService {
     this.blockchain = new Blockchain();
   }
   private getHash(block: BlockI): string {
-    return this.blockchain.createHash(block);
+    return this.blockchain.hashBlock('ert6', [], 1977);
   }
 
   public getHello(): string {

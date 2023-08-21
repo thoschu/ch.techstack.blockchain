@@ -1,11 +1,11 @@
 import { UUID } from 'node:crypto';
 
 export interface TransactionI {
-    readonly id: UUID;
-    readonly value: unknown;
-    readonly sender: string;
-    readonly recipient: string;
     readonly data: unknown;
-    readonly timestamp: number;
+    readonly id: UUID;
     readonly nonce: number;
+    readonly recipient: string;
+    readonly sender: string;
+    readonly timestamp: number;
+    readonly value: unknown;
 }

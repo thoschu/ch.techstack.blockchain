@@ -1,6 +1,14 @@
 import { TransactionI } from '@/transaction/transaction.interface';
 import { BlockI } from '@/block/block.interface';
 
+export type BlockData = {
+    index: number;
+    transactions: TransactionI[];
+    nonce: number;
+    previousBlockHash: string;
+    hash: string;
+}
+
 export class Block implements BlockI {
     private _index: number;
     private _timestamp: number;

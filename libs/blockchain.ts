@@ -1,18 +1,17 @@
-import { createHash, Hash, randomUUID } from 'node:crypto';
+import { createHash, Hash } from 'node:crypto';
 import { inc, last } from 'ramda';
 
 import { Block } from '@/block/block.class';
 import { BlockI } from '@/block/block.interface';
 import { TransactionI } from '@/transaction/transaction.interface';
+import { Transaction, TransactionData } from '@/transaction/transaction.class';
 
 export class Blockchain {
-    private static readonly SHA512: Hash = createHash('sha512')
+    private static readonly SHA512: Hash = createHash('sha512');
     private readonly _chain: BlockI[] = [];
     private _pendingTransactions: TransactionI[] = [];
 
-    constructor() {
-        console.log(randomUUID());
-    }
+    constructor() {}
 
     public get chain(): BlockI[] {
         return this._chain;
@@ -26,18 +25,17 @@ export class Blockchain {
         this._pendingTransactions = value;
     }
 
-    public createNewTransaction(payload: unknown, sender: string, recipient: string, data: unknown): TransactionI {
-        return null;
+    public hashBlock(previousBlockHash: string, blockData: TransactionI[], nonce: number): string {
+        const blockDataAsString: string = `${previousBlockHash}${nonce.toString()}${JSON.stringify(blockData)}`;
+
+        return Blockchain.SHA512.update(blockDataAsString).digest('hex');
     }
 
-    public getLastBlock(): BlockI {
-        return last<BlockI>(this.chain);
-    }
+    public createNewPendingTransaction(value: unknown, sender: string, recipient: string, data?: unknown): number {
+        const newTransactionData: TransactionData = { data, recipient, sender, value };
+        const newTransaction: TransactionI = new Transaction(newTransactionData);
 
-    public createHash(block: BlockI): string {
-        const blockString: string = JSON.stringify(block);
-
-        return Blockchain.SHA512.update(blockString).digest('hex'); //"base64" | "base64url" | "hex" | "binary"
+        return this.putTransactionsInBlock(newTransaction);
     }
 
     public createNewBlockInChain(nonce: number, previousBlockHash: string, hash: string): BlockI {
@@ -47,6 +45,19 @@ export class Blockchain {
         this.chain.push(newBlock);
 
         return newBlock;
+    }
+
+    private putTransactionsInBlock(newTransaction: TransactionI): number {
+        const lastBlock: BlockI = this.getLastBlock();
+        const { index: lastBlockIndex }: { index: number } = lastBlock;
+
+        this.pendingTransactions.push(newTransaction);
+
+        return inc(lastBlockIndex);
+    }
+
+    private getLastBlock(): BlockI {
+        return last<BlockI>(this.chain);
     }
 
     private createNewBlock(nonce: number, previousBlockHash: string, hash: string): BlockI {
