@@ -7,11 +7,12 @@ import { TransactionI } from '@/transaction/transaction.interface';
 import { Transaction, TransactionData } from '@/transaction/transaction.class';
 
 export class Blockchain {
-    private static readonly SHA512: Hash = createHash('sha512');
     private readonly _chain: BlockI[] = [];
     private _pendingTransactions: TransactionI[] = [];
 
-    constructor() {}
+    constructor() {
+        this.initChainWithGenesisBlock();
+    }
 
     public get chain(): BlockI[] {
         return this._chain;
@@ -25,10 +26,22 @@ export class Blockchain {
         this._pendingTransactions = value;
     }
 
+    public proofOfWork(previousBlockHash: string, currentBlockData: TransactionI[]): any {
+        let nonce: number = 0;
+        let hash: string = this.hashBlock(previousBlockHash, currentBlockData, nonce);
+
+        while (hash.substring(0, 4) !== '0000') {
+            nonce++;
+            hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
+        }
+
+        return nonce;
+    }
+
     public hashBlock(previousBlockHash: string, blockData: TransactionI[], nonce: number): string {
         const blockDataAsString: string = `${previousBlockHash}${nonce.toString()}${JSON.stringify(blockData)}`;
 
-        return Blockchain.SHA512.update(blockDataAsString).digest('hex');
+        return createHash('sha512').update(blockDataAsString).digest('hex');
     }
 
     public createNewPendingTransaction(value: unknown, sender: string, recipient: string, data?: unknown): number {
@@ -47,6 +60,11 @@ export class Blockchain {
         return newBlock;
     }
 
+    private initChainWithGenesisBlock(): void {
+        this.createNewBlockInChain(-1, '', '0');
+        console.log(this.chain);
+    }
+
     private putTransactionsInBlock(newTransaction: TransactionI): number {
         const lastBlock: BlockI = this.getLastBlock();
         const { index: lastBlockIndex }: { index: number } = lastBlock;
@@ -63,7 +81,7 @@ export class Blockchain {
     private createNewBlock(nonce: number, previousBlockHash: string, hash: string): BlockI {
         const { length: chainLength }: { length: number }  = this.chain;
         const index: number = inc(chainLength);
-        const transactions: TransactionI[] = this._pendingTransactions;
+        const transactions: TransactionI[] = this.pendingTransactions;
 
         return new Block(index, transactions, nonce, previousBlockHash, hash);
     }
