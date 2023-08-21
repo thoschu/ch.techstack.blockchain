@@ -9,8 +9,8 @@ export class AppService {
   constructor() {
     this.blockchain = new Blockchain();
   }
-  private getHash(block: BlockI): string {
-    return this.blockchain.hashBlock('ert6', [], 1977);
+  public getBlockchain(): BlockI[] {
+    return this.blockchain.chain
   }
 
   public getHello(): string {

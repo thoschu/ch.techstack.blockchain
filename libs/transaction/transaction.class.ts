@@ -1,6 +1,5 @@
 import { randomUUID, UUID } from 'node:crypto';
 import { TransactionI } from '@/transaction/transaction.interface';
-import { BlockI } from '@/block/block.interface';
 
 export type TransactionData = {
     data?: unknown;
