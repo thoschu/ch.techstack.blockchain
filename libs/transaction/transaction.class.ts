@@ -79,3 +79,5 @@ export class Transaction implements TransactionI {
         this._value = value;
     }
 }
+
+export default Transaction;
