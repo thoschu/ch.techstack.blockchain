@@ -1,30 +1,89 @@
-import { INestApplication } from '@nestjs/common';
+import cluster, { Worker } from 'node:cluster';
+import { availableParallelism } from 'node:os';
+import process from 'node:process';
+
+import { DynamicModule, INestApplication, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+
 import helmet, { HelmetOptions } from 'helmet';
+import { prop } from 'ramda';
+
+import 'dotenv/config';
 
 import { AppModule } from './app.module';
+import {DocumentBuilder, SwaggerModule} from "@nestjs/swagger";
 
-(async (): Promise<void> => {
-  const app: INestApplication<any> = await NestFactory.create(AppModule);
-  const helmetOptions: HelmetOptions = {
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: true,
-    crossOriginResourcePolicy: true,
-    originAgentCluster: true,
-    referrerPolicy: true,
-    contentSecurityPolicy: {
-      directives: {
-        imgSrc: [`'self'`, 'data:', 'localhost', 'https://www.thomas-schulte.de/images/made_with_love.gif'],
-        scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
-        manifestSrc: [`'self'`, 'localhost'],
-        frameSrc: [`'self'`, 'localhost'],
-        defaultSrc: [`'self'`, 'localhost'],
-        fontSrc: [`'self'`, 'fonts.gstatic.com', 'data:'],
-      },
-    },
-  };
+const localDevCPUs: number = 1;
+const numCPUs: number = localDevCPUs ?? availableParallelism();
+const logger: Logger = new Logger('Server');
 
-  app.use(helmet(helmetOptions));
+if (cluster.isPrimary) {
+  logger.warn(`Primary process: ${process.pid} is running with ${numCPUs} workers`);
 
-  await app.listen(3000);
-})();
+  for (let i: number = 0; i < numCPUs; i++) {
+    const worker: Worker = cluster.fork();
+
+    worker.send(JSON.stringify({ primaryPid: process.pid }));
+  }
+
+  cluster.on('exit', (worker: Worker, code: number, signal: string): void => {
+    logger.warn(`worker ${worker.process.pid} died by ${code} and ${signal}`);
+
+    cluster.fork();
+  });
+} else {
+
+  process.on('message', (message: string): void => {
+    logger.verbose(`Received in Worker ${cluster.worker.id}:`, message);
+    const { primaryPid }: { primaryPid: number } = JSON.parse(message);
+    const workerPid: number = process.pid;
+    const worker: number = cluster.worker.id;
+
+    if (message) {
+      (async ({argv, env}: { argv: string[]; env: NodeJS.ProcessEnv }): Promise<void> => {
+        const protocol: string = 'http';
+        const host: string = 'localhost';
+        const port: number = parseInt(argv[2], 10) || parseInt(prop('DEFAULT_PORT', env), 10);
+        const url: URL = new URL(argv[3]) ?? new URL(`${protocol}://${host}:${port}`)
+        const appDynamicModule: DynamicModule = AppModule.register({ primaryPid, workerPid, worker, url });
+        const app: INestApplication = await NestFactory.create(appDynamicModule);
+        const helmetOptions: HelmetOptions = {
+          crossOriginEmbedderPolicy: false,
+          crossOriginOpenerPolicy: true,
+          crossOriginResourcePolicy: true,
+          originAgentCluster: true,
+          referrerPolicy: true,
+          contentSecurityPolicy: {
+            directives: {
+              imgSrc: [`'self'`, 'data:', 'localhost', 'https://www.thomas-schulte.de/images/made_with_love.gif'],
+              scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
+              manifestSrc: [`'self'`, 'localhost'],
+              frameSrc: [`'self'`, 'localhost'],
+              defaultSrc: [`'self'`, 'localhost'],
+              fontSrc: [`'self'`, 'fonts.gstatic.com', 'data:'],
+            },
+          },
+        };
+
+        app.use(helmet(helmetOptions));
+
+        const config = new DocumentBuilder()
+            .setTitle('blockchain example')
+            .setDescription('The blockchain API description')
+            .setVersion('1.0')
+            .addTag('blockchain')
+            .build();
+        const document = SwaggerModule.createDocument(app, config);
+        SwaggerModule.setup('api', app, document);
+
+        await app.listen(port);
+
+        logger.log(`Started: ${new URL(`http://localhost:${port}`)} - pid: ${process.pid} and worker: ${cluster.worker.id} from ${primaryPid}`);
+      })({ argv: process.argv, env: process.env });
+    }
+
+    process.send({ message: `${cluster.worker.id}` });
+  });
+
+  logger.debug(`Worker ${cluster.worker.id} started in process with id: ${process.pid}`);
+}

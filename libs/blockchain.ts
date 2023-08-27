@@ -11,9 +11,12 @@ export type CurrentBlockData = Record<'transactions', TransactionI[]> & Record<'
 export class Blockchain {
     private readonly _chain: BlockI[] = [];
     private _pendingTransactions: TransactionI[] = [];
+    private readonly _currentNodeUrl: URL;
+    private readonly _networkNodes: URL[] = [];
 
-    constructor() {
+    public constructor(currentNodeUrl: URL) {
         this.initChainWithGenesisBlock();
+        this._currentNodeUrl = currentNodeUrl;
     }
 
     public get chain(): BlockI[] {
@@ -25,6 +28,14 @@ export class Blockchain {
     }
     private set pendingTransactions(value: TransactionI[]) {
         this._pendingTransactions = value;
+    }
+
+    public get networkNodes(): URL[] {
+        return this._networkNodes;
+    }
+
+    public get currentNodeUrl(): URL {
+        return this._currentNodeUrl;
     }
 
     public proofOfWork(previousBlockHash: string, currentBlockData: CurrentBlockData): any {
