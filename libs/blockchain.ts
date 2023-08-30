@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { inc, last } from 'ramda';
+import { equals, inc, last, not } from 'ramda';
 
 import { Block } from '@/block/block.class';
 import { BlockI } from '@/block/block.interface';
@@ -10,13 +10,15 @@ export type CurrentBlockData = Record<'transactions', TransactionI[]> & Record<'
 
 export class Blockchain {
     private readonly _chain: BlockI[] = [];
+    private readonly _difficulty: number;
     private _pendingTransactions: TransactionI[] = [];
     private readonly _currentNodeUrl: URL;
     private readonly _networkNodes: URL[] = [];
 
-    public constructor(currentNodeUrl: URL) {
+    public constructor(currentNodeUrl: URL, difficulty: number = 4) {
         this.initChainWithGenesisBlock();
         this._currentNodeUrl = currentNodeUrl;
+        this._difficulty = difficulty;
     }
 
     public get chain(): BlockI[] {
@@ -39,10 +41,11 @@ export class Blockchain {
     }
 
     public proofOfWork(previousBlockHash: string, currentBlockData: CurrentBlockData): any {
+        const targetPrefix: string = '0'.repeat(this._difficulty);
         let nonce: number = 0;
         let hash: string = this.calculateHash(previousBlockHash, currentBlockData, nonce);
 
-        while (hash.substring(0, 4) !== '0000') {
+        while (not(equals(hash.substring(0, 4), targetPrefix))) {
             nonce++;
             hash = this.calculateHash(previousBlockHash, currentBlockData, nonce);
         }

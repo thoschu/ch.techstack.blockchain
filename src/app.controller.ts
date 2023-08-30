@@ -13,7 +13,13 @@ import { ApiCreatedResponse, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Blockchain } from '@/blockchain';
 import { Transaction, TransactionData } from '@/transaction/transaction.class';
 
-import { AppService, MineResponse, PendingTransactionPayload } from './app.service';
+import {
+  AppService,
+  ChainActionStatusRange,
+  MineResponse,
+  PendingTransactionPayload,
+  ResponseStatusRange
+} from './app.service';
 
 @ApiTags('v1')
 @Controller('v1')
@@ -24,7 +30,7 @@ export class AppV1Controller {
   @Get('/blockchain')
   @Header('Cache-Control', 'none')
   public blockchain(): Blockchain {
-    this.logger.log(`/blockchain :: ${process.pid}`);
+    this.logger.log(`> /blockchain :: ${process.pid}`);
     return this.appService.getBlockchain();
   }
 
@@ -32,7 +38,7 @@ export class AppV1Controller {
   @Header('Cache-Control', 'none')
   @HttpCode(HttpStatus.CREATED)
   public mine(): MineResponse {
-    this.logger.log(`/mine :: ${process.pid}`);
+    this.logger.log(`> /mine :: ${process.pid}`);
     return this.appService.mine();
   }
 
@@ -44,7 +50,7 @@ export class AppV1Controller {
     type: Transaction
   })
   public transaction(@Body() body: TransactionData): number {
-    this.logger.log(`/transaction :: ${process.pid}`);
+    this.logger.log(`> /transaction :: ${process.pid}`);
     const { value, sender, recipient, data }: PendingTransactionPayload = body;
 
     return this.appService.createNewPendingTransaction({ value, sender, recipient, data });
@@ -52,48 +58,61 @@ export class AppV1Controller {
 
   @Post('/register-broadcast-node')
   @Header('Cache-Control', 'none')
-  @ApiResponse({ status: 201, description: `New node registered with network successfully.`})
-  @ApiResponse({ status: 409, description: 'Conflict.'})
-  public registerAndBroadcastNode(@Body() body: Record<'url', string>, @Req() req: Request) {
-    this.logger.log(`/register-broadcast-node :: ${process.pid}`);
-    const url: string = body.url;
-    const newNodeUrl: URL = new URL(url);
-    const successful: boolean = this.appService.registerAndBroadcastNode(newNodeUrl);
+  @ApiResponse({ status: HttpStatus.CREATED, description: `New node registered with network successfully.`})
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'BAD_REQUEST'})
+  public registerAndBroadcastNode(@Body() body: Record<'url', string>): Record<'note' | 'status', string> | HttpException {
+    this.logger.log(`> /register-broadcast-node :: ${process.pid}`);
+    const { url }: Record<'url', string> = body;
+    const result: ChainActionStatusRange = this.appService.registerAndBroadcastNode(url);
 
-    console.log(successful);
-
-    if (successful) {
-      return { 'note': `New node with the url: ${newNodeUrl} registered with network successfully.` }
-    } else {
-      throw new HttpException('Conflict', HttpStatus.CONFLICT);
+    switch (result) {
+      case ResponseStatusRange.ok:
+        return { note: `New node with the url: ${url} registered with network successfully.`, status: `${result}` }
+      case ResponseStatusRange.warn:
+      case ResponseStatusRange.failure:
+      default:
+        return { note: `New node with the url: ${url} is not valid.`, status: `${result}` }
     }
   }
 
   @Post('/register-node')
   @Header('Cache-Control', 'none')
-  public registerNode(@Body() body: Record<'url', string>): Record<'note', string> {
-    this.logger.log(`/register-node :: ${process.pid}`);
-    const url: string = body.url;
-    const newNodeUrl: URL = new URL(url);
+  public registerNode(@Body() body: Record<'url', string>): Record<'note' | 'status', string> | HttpException {
+    this.logger.log(`> /register-node :: ${process.pid}`);
+    const { url }: Record<'url', string> = body;
+    const result: ChainActionStatusRange = this.appService.registerNode(url);
 
-    this.appService.registerNode(newNodeUrl);
-
-    return { note: `New node with the url: ${newNodeUrl} registered successfully with node.`};
+    switch (result) {
+      case ResponseStatusRange.ok:
+        return { note: `New node with the url: ${url} registered successfully with node.`, status: `${result}`};
+      case ResponseStatusRange.warn:
+      case ResponseStatusRange.failure:
+      default:
+        return { note: `New node with the url: ${url} NOT registered with node.`, status: `${result}`};
+    }
   }
 
   @Post('/register-nodes-bulk')
   @Header('Cache-Control', 'none')
-  public registerNodesBulk(@Body() body: Record<'allNetworkNode', string[]>): boolean {
-    this.logger.log(`/register-nodes-bulk :: ${process.pid}`);
-    const allNetworkNode: string[] = body.allNetworkNode;
-    // console.log(allNetworkNode);
+  public registerNodesBulk(@Body() body: Record<'allNetworkNodes', string[]>): Record<'note' | 'status', string> | HttpException {
+    this.logger.log(`> /register-nodes-bulk :: ${process.pid}`);
+    const allNetworkNodes: URL[] = body.allNetworkNodes.map((url: string): URL => new URL(url));
+    const result: ChainActionStatusRange = this.appService.registerNodesBulk(allNetworkNodes);
+    const url: URL = this.appService.identity.url;
 
-    return true;
+    switch (result) {
+      case ResponseStatusRange.ok:
+        return { note: `Bulk registration on node: ${url} successful.`, status: `${result}`};
+      case ResponseStatusRange.warn:
+      case ResponseStatusRange.failure:
+      default:
+        return { note: `Bulk registration on node: ${url} NOT successful.`, status: `${result}`};
+    }
   }
 
   @Get('*')
   @Redirect('/', 301)
   public wildcard(): void {
-    this.logger.log(`/ :: ${process.pid}`);
+    this.logger.log(`>/ :: ${process.pid}`);
   }
 }
