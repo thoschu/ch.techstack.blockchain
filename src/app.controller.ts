@@ -20,6 +20,7 @@ import {
   PendingTransactionPayload,
   ResponseStatusRange
 } from './app.service';
+import {TransactionI} from "@/transaction/transaction.interface";
 
 @ApiTags('v1')
 @Controller('v1')
@@ -49,11 +50,26 @@ export class AppV1Controller {
     description: 'The record has been successfully created.',
     type: Transaction
   })
-  public transaction(@Body() body: TransactionData): number {
+  public transaction(@Body() body: TransactionI): number | any {
     this.logger.log(`> /transaction :: ${process.pid}`);
-    const { value, sender, recipient, data }: PendingTransactionPayload = body;
 
-    return this.appService.createNewPendingTransaction({ value, sender, recipient, data });
+    return this.appService.addNewTransactionToPendingTransaction(body);
+  }
+
+  @Post('/transaction/broadcast')
+  @Header('Cache-Control', 'none')
+  @HttpCode(HttpStatus.CREATED)
+  public transactionBroadcast(@Body() body: TransactionData): Record<'note', string> | HttpException{
+    const { value, sender, recipient, data }: PendingTransactionPayload = body;
+    const transaction: TransactionI = this.appService.createNewTransaction({ value, sender, recipient, data });
+    const broadcastTransactionToNetworkStatus: ChainActionStatusRange = this.appService.broadcastTransactionToNetwork(transaction);
+    const addNewTransactionToPendingTransactionStatus: ChainActionStatusRange = this.appService.addNewTransactionToPendingTransaction(transaction);
+
+    if(broadcastTransactionToNetworkStatus !== ResponseStatusRange.ok || addNewTransactionToPendingTransactionStatus !== ResponseStatusRange.ok) {
+      return { note: `Transaction created and broadcast was not successfully.`}
+    }
+
+    return { note: `Transaction created and broadcast successfully.`}
   }
 
   @Post('/register-broadcast-node')

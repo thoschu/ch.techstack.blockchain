@@ -9,8 +9,8 @@ import { Transaction, TransactionData } from '@/transaction/transaction.class';
 export type CurrentBlockData = Record<'transactions', TransactionI[]> & Record<'index', number>;
 
 export class Blockchain {
+    #_difficulty: number;
     private readonly _chain: BlockI[] = [];
-    private readonly _difficulty: number;
     private _pendingTransactions: TransactionI[] = [];
     private readonly _currentNodeUrl: URL;
     private readonly _networkNodes: URL[] = [];
@@ -18,7 +18,7 @@ export class Blockchain {
     public constructor(currentNodeUrl: URL, difficulty: number = 4) {
         this.initChainWithGenesisBlock();
         this._currentNodeUrl = currentNodeUrl;
-        this._difficulty = difficulty;
+        this.#_difficulty = difficulty;
     }
 
     public get chain(): BlockI[] {
@@ -41,7 +41,7 @@ export class Blockchain {
     }
 
     public proofOfWork(previousBlockHash: string, currentBlockData: CurrentBlockData): any {
-        const targetPrefix: string = '0'.repeat(this._difficulty);
+        const targetPrefix: string = '0'.repeat(this.#_difficulty);
         let nonce: number = 0;
         let hash: string = this.calculateHash(previousBlockHash, currentBlockData, nonce);
 
@@ -59,12 +59,20 @@ export class Blockchain {
         return createHash('sha512').update(blockDataAsString).digest('hex');
     }
 
-    public createNewPendingTransaction(value: unknown, sender: string, recipient: string, data?: unknown): number {
+    public createNewTransaction(value: unknown, sender: string, recipient: string, data?: unknown): TransactionI {
         const newTransactionData: TransactionData = { data, recipient, sender, value };
-        const newTransaction: TransactionI = new Transaction(newTransactionData);
-
-        return this.putTransactionsInBlock(newTransaction);
+        return new Transaction(newTransactionData);
     }
+
+    public addNewTransactionToPendingTransaction(newTransaction: TransactionI): number {
+        const lastBlock: BlockI = this.getLastBlock();
+        const { index: lastBlockIndex }: { index: number } = lastBlock;
+
+        this.pendingTransactions.push(newTransaction);
+
+        return inc(lastBlockIndex);
+    }
+
 
     public getLastBlock(): BlockI {
         return last<BlockI>(this.chain);
@@ -83,15 +91,6 @@ export class Blockchain {
         this.createNewBlockInChain(-1, '', '0');
     }
 
-    private putTransactionsInBlock(newTransaction: TransactionI): number {
-        const lastBlock: BlockI = this.getLastBlock();
-        const { index: lastBlockIndex }: { index: number } = lastBlock;
-
-        this.pendingTransactions.push(newTransaction);
-
-        return inc(lastBlockIndex);
-    }
-
     private createNewBlock(nonce: number, previousBlockHash: string, hash: string): BlockI {
         const { length: chainLength }: { length: number }  = this.chain;
         const index: number = inc(chainLength);
@@ -100,4 +99,3 @@ export class Blockchain {
         return new Block(index, transactions, nonce, previousBlockHash, hash);
     }
 }
-

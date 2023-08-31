@@ -6,7 +6,7 @@ import { BlockI } from '@/block/block.interface';
 import { TransactionI } from '@/transaction/transaction.interface';
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { and, equals, inc, isEmpty, not} from 'ramda';
-import {forkJoin, noop, Observable, Subscription, tap, using} from 'rxjs';
+import {catchError, forkJoin, noop, Observable, of, Subscription, tap, using} from 'rxjs';
 import { assign, createMachine, interpret, Interpreter, StateMachine } from 'xstate';
 
 export enum ResponseStatusRange { ok = 1, warn = 2 , failure = 3 };
@@ -59,16 +59,52 @@ export class AppService implements OnModuleDestroy {
     return this.blockchain;
   }
 
-  public createNewPendingTransaction({ value, sender, recipient, data }: PendingTransactionPayload): number {
-    return this.blockchain.createNewPendingTransaction(value, sender, recipient, data);
-  }
-
   public getLastBlock(): BlockI {
     return this.blockchain.getLastBlock()
   }
 
+  public createNewTransaction({ value, sender, recipient, data }: PendingTransactionPayload): TransactionI {
+    return this.blockchain.createNewTransaction(value, sender, recipient, data);
+  }
+
+  public addNewTransactionToPendingTransaction(newTransaction: TransactionI): number {
+    return this.blockchain.addNewTransactionToPendingTransaction(newTransaction);
+  }
+
+  public broadcastTransactionToNetwork(newTransaction: TransactionI): ChainActionStatusRange {
+    const registerNodeObservables: Observable<AxiosResponse>[] = [];
+    let returnValue: ChainActionStatusRange = ResponseStatusRange.ok
+
+    this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
+      const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
+      const body: TransactionI = newTransaction;
+      const postUrl: URL = new URL(networkNodeUrl);
+      postUrl.pathname = '/v1/transaction';
+
+      const post$: Observable<AxiosResponse<URL, boolean>> = this.httpService.post(`${postUrl}`, body, requestOptions);
+
+      registerNodeObservables.push(post$);
+    });
+
+    const forkJoinSubscription: Subscription = forkJoin<AxiosResponse[]>(registerNodeObservables).subscribe((responses: AxiosResponse<URL>[]): void => {
+      responses.forEach((response: AxiosResponse<URL>): void => {
+        // this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
+        console.log(response);
+        if(response.statusText !== 'ok') {
+          returnValue = ResponseStatusRange.warn
+        }
+      });
+    });
+
+    this.subscriptions.push(forkJoinSubscription);
+
+    return returnValue;
+  }
+
   public mine(): MineResponse {
-    this.blockchain.createNewPendingTransaction(null, '00', this.nodeUUID);
+    const transaction: TransactionI = this.blockchain.createNewTransaction(null, '00', this.nodeUUID);
+
+    this.blockchain.addNewTransactionToPendingTransaction(transaction);
 
     const payload: MinePayload = this.getCreateMineResponsePayload();
 
@@ -76,8 +112,20 @@ export class AppService implements OnModuleDestroy {
   }
 
   public registerAndBroadcastNode(url: string): ChainActionStatusRange {
-    // toDo: test the url (if reachable with head request)
     const newNodeUrl: URL = new URL(url);
+
+    // this.subscriptions.push(this.httpService
+    //     .head(`${newNodeUrl}`)
+    //     .pipe(catchError<AxiosResponse, Observable<boolean>>((error) => {
+    //       console.log(error);
+    //       console.log('############################');
+    //       return of(false);
+    //     }))
+    //     .subscribe((response: AxiosResponse<any, any>): void => {
+    //       // console.log(response);
+    //       // this.logger.log(`> ${newNodeUrl} > ${JSON.stringify(response)}`);
+    //     }));
+
     const registerNodeObservables: Observable<AxiosResponse>[] = [];
     const isURLPresentInBlockchainNetworkNodes: boolean = this.blockchain.networkNodes.some((urlObj: URL): boolean => urlObj.href === newNodeUrl.href);
     const blockchainNetworkNodesIncludesNotNewUrl: boolean = not(isURLPresentInBlockchainNetworkNodes);
