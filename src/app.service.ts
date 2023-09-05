@@ -60,7 +60,7 @@ export class AppService implements OnModuleDestroy {
   }
 
   public getLastBlock(): BlockI {
-    return this.blockchain.getLastBlock()
+    return this.blockchain.getLastBlock();
   }
 
   public createNewTransaction({ value, sender, recipient, data }: PendingTransactionPayload): TransactionI {
@@ -76,10 +76,14 @@ export class AppService implements OnModuleDestroy {
     let returnValue: ChainActionStatusRange = ResponseStatusRange.ok
 
     this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
-      const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
+      const requestOptions: AxiosRequestConfig<URL> = {
+        responseType: 'json',
+        headers:{
+          'client': this.blockchain.currentNodeUrl.href,
+        }
+      };
       const body: TransactionI = newTransaction;
-      const postUrl: URL = new URL(networkNodeUrl);
-      postUrl.pathname = '/v1/transaction';
+      const postUrl: URL = new URL('/v1/transaction', networkNodeUrl);
 
       const post$: Observable<AxiosResponse<URL, boolean>> = this.httpService.post(`${postUrl}`, body, requestOptions);
 
@@ -88,8 +92,8 @@ export class AppService implements OnModuleDestroy {
 
     const forkJoinSubscription: Subscription = forkJoin<AxiosResponse[]>(registerNodeObservables).subscribe((responses: AxiosResponse<URL>[]): void => {
       responses.forEach((response: AxiosResponse<URL>): void => {
-        // this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
-        console.log(response);
+        this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
+
         if(response.statusText !== 'ok') {
           returnValue = ResponseStatusRange.warn
         }
@@ -127,15 +131,14 @@ export class AppService implements OnModuleDestroy {
     //     }));
 
     const registerNodeObservables: Observable<AxiosResponse>[] = [];
-    const isURLPresentInBlockchainNetworkNodes: boolean = this.blockchain.networkNodes.some((urlObj: URL): boolean => urlObj.href === newNodeUrl.href);
+    const isURLPresentInBlockchainNetworkNodes: boolean = this.blockchain.networkNodes.some((urlObj: URL): boolean => equals<string>(urlObj.href, newNodeUrl.href));
     const blockchainNetworkNodesIncludesNotNewUrl: boolean = not(isURLPresentInBlockchainNetworkNodes);
-    const currentNodeUrl: URL = this.blockchain.currentNodeUrl;
+    const { currentNodeUrl }: { currentNodeUrl: URL } = this.blockchain;
     const newNodeIsCurrentNode: boolean = equals<string>(`${newNodeUrl}`, `${currentNodeUrl}`);
     const newNodeIsNotCurrentNode: boolean = not(newNodeIsCurrentNode);
-    const isUrlEqualToCurrentNodeUrl: boolean = equals<string>(`${newNodeUrl}`, `${this.blockchain.currentNodeUrl}`);
     let returnValue: ChainActionStatusRange;
 
-    if(isUrlEqualToCurrentNodeUrl) {
+    if(newNodeIsCurrentNode) {
       returnValue = ResponseStatusRange.warn;
     } else if(and<boolean, boolean>(blockchainNetworkNodesIncludesNotNewUrl, newNodeIsNotCurrentNode)) {
       this.blockchain.networkNodes.push(newNodeUrl);
@@ -147,12 +150,9 @@ export class AppService implements OnModuleDestroy {
 
     this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
       const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
-      const newNodeUrl: URL = new URL(url);
       const body: Record<'url', URL> = { url: newNodeUrl };
-      const postUrl: URL = new URL(networkNodeUrl);
-      postUrl.pathname = '/v1/register-node';
-
-      const post$: Observable<AxiosResponse<URL, boolean>> = this.httpService.post(`${postUrl}`, body, requestOptions);
+      const postUrlV1RegisterNode: URL = new URL('/v1/register-node', networkNodeUrl);
+      const post$: Observable<AxiosResponse<URL, boolean>> = this.httpService.post(`${postUrlV1RegisterNode}`, body, requestOptions);
 
       registerNodeObservables.push(post$);
     });
@@ -165,16 +165,19 @@ export class AppService implements OnModuleDestroy {
         this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
       });
 
+      const postUrlV1RegisterNodesBulk: URL = new URL('/v1/register-nodes-bulk', newNodeUrl);
       const postSubscription: Subscription = this.httpService
-        .post(`${newNodeUrl}v1/register-nodes-bulk`, data, requestOptions)
+        .post(`${postUrlV1RegisterNodesBulk}`, data, requestOptions)
         .subscribe((response: AxiosResponse): void => {
-          this.logger.log(`> ${newNodeUrl}v1/register-nodes-bulk > ${response.status} > ${JSON.stringify(response.data)}`);
+          this.logger.log(`> ${postUrlV1RegisterNodesBulk} > ${response.status} > ${JSON.stringify(response.data)}`);
         });
 
       this.subscriptions.push(postSubscription);
+      // postSubscription.unsubscribe();
     });
 
     this.subscriptions.push(forkJoinSubscription);
+    // forkJoinSubscription.unsubscribe();
 
     return returnValue;
   }
@@ -182,10 +185,13 @@ export class AppService implements OnModuleDestroy {
   public registerNode(url: string): ChainActionStatusRange {
     const newNodeUrl: URL = new URL(url);
     const currentNodeUrl: URL = this.blockchain.currentNodeUrl;
-    const blockchainNetworkNodesIncludesNotNewUrl: boolean = not(this.blockchain.networkNodes.includes(newNodeUrl));
-    const newNodeIsNotCurrentNode: boolean = not(equals<string>(`${newNodeUrl}`, `${currentNodeUrl}`));
+    const blockchainNetworkNodesIncludesNewUrl: boolean = this.blockchain.networkNodes.includes(newNodeUrl);
+    const blockchainNetworkNodesIncludesNotNewUrl: boolean = not(blockchainNetworkNodesIncludesNewUrl);
+    const newNodeEqualsCurrentNode: boolean = equals<string>(`${newNodeUrl}`, `${currentNodeUrl}`);
+    const newNodeEqualsNotCurrentNode: boolean = not(newNodeEqualsCurrentNode);
+    const isValidNodeUrl: boolean = and<boolean, boolean>(blockchainNetworkNodesIncludesNotNewUrl, newNodeEqualsNotCurrentNode)
 
-    if(and<boolean, boolean>(blockchainNetworkNodesIncludesNotNewUrl, newNodeIsNotCurrentNode)) {
+    if(isValidNodeUrl) {
       this.blockchain.networkNodes.push(newNodeUrl);
 
       return ResponseStatusRange.ok;
@@ -195,19 +201,20 @@ export class AppService implements OnModuleDestroy {
   }
 
   public registerNodesBulk(allNetworkNodes: URL[]): ChainActionStatusRange {
-    const isNetworkNodesEmpty: boolean = isEmpty(this.blockchain.networkNodes);
+    const { networkNodes }: { networkNodes: URL[] } = this.blockchain;
+    const isNetworkNodesEmpty: boolean = isEmpty(networkNodes);
+    const { href: currentNodeUrlHref }: { href: string } = this.blockchain.currentNodeUrl;
 
     if(isNetworkNodesEmpty) {
-      allNetworkNodes = allNetworkNodes.filter((urlObj: URL): boolean => urlObj.href !== this.blockchain.currentNodeUrl.href);
+      const filteredAllNetworkNodes: URL[] = allNetworkNodes.filter((urlObj: URL): boolean => not(equals<string>(urlObj.href, currentNodeUrlHref)));
 
-      this.blockchain.networkNodes.push(...allNetworkNodes);
+      this.blockchain.networkNodes.push(...filteredAllNetworkNodes);
 
       return ResponseStatusRange.ok;
     }
 
     return ResponseStatusRange.failure;
   }
-
 
   private getCreateMineResponsePayload(): MinePayload {
     const lastBlock: BlockI = this.getLastBlock();

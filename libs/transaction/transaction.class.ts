@@ -2,11 +2,11 @@ import { randomUUID, UUID } from 'node:crypto';
 import { TransactionI } from '@/transaction/transaction.interface';
 
 export type TransactionData = {
-    data?: unknown;
-    nonce?: number;
     recipient: string;
     sender: string;
     value: unknown;
+    data?: unknown;
+    nonce?: number;
 }
 
 export class Transaction implements TransactionI {

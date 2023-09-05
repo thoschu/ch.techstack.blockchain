@@ -61,6 +61,7 @@ export class Blockchain {
 
     public createNewTransaction(value: unknown, sender: string, recipient: string, data?: unknown): TransactionI {
         const newTransactionData: TransactionData = { data, recipient, sender, value };
+
         return new Transaction(newTransactionData);
     }
 

@@ -10,6 +10,7 @@ import {
   Redirect, Req, Res
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
 import { Blockchain } from '@/blockchain';
 import { Transaction, TransactionData } from '@/transaction/transaction.class';
 
@@ -50,20 +51,22 @@ export class AppV1Controller {
     description: 'The record has been successfully created.',
     type: Transaction
   })
-  public transaction(@Body() body: TransactionI): number | any {
-    this.logger.log(`> /transaction :: ${process.pid}`);
-
-    return this.appService.addNewTransactionToPendingTransaction(body);
+  public transaction(@Body() body: TransactionI, @Req() request: Request): number | HttpException  {
+    this.logger.log(`> /v1/transaction :: ${process.pid}`);
+    const { headers } = request;
+    console.log(headers.client);
+    // return isNodeAllowedTo ? this.appService.addNewTransactionToPendingTransaction(body) : -1;
+    return this.appService.addNewTransactionToPendingTransaction(body) ?? new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
   }
 
   @Post('/transaction/broadcast')
   @Header('Cache-Control', 'none')
   @HttpCode(HttpStatus.CREATED)
-  public transactionBroadcast(@Body() body: TransactionData): Record<'note', string> | HttpException{
+  public transactionBroadcast(@Body() body: TransactionData): Record<'note', string> | HttpException {
     const { value, sender, recipient, data }: PendingTransactionPayload = body;
     const transaction: TransactionI = this.appService.createNewTransaction({ value, sender, recipient, data });
-    const broadcastTransactionToNetworkStatus: ChainActionStatusRange = this.appService.broadcastTransactionToNetwork(transaction);
     const addNewTransactionToPendingTransactionStatus: ChainActionStatusRange = this.appService.addNewTransactionToPendingTransaction(transaction);
+    const broadcastTransactionToNetworkStatus: ChainActionStatusRange = this.appService.broadcastTransactionToNetwork(transaction);
 
     if(broadcastTransactionToNetworkStatus !== ResponseStatusRange.ok || addNewTransactionToPendingTransactionStatus !== ResponseStatusRange.ok) {
       return { note: `Transaction created and broadcast was not successfully.`}
