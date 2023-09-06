@@ -6,8 +6,9 @@ import { BlockI } from '@/block/block.interface';
 import { TransactionI } from '@/transaction/transaction.interface';
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { and, equals, inc, isEmpty, not} from 'ramda';
-import {catchError, forkJoin, noop, Observable, of, Subscription, tap, using} from 'rxjs';
+import {catchError, forkJoin, lastValueFrom, noop, Observable, of, Subscription, tap, using} from 'rxjs';
 import { assign, createMachine, interpret, Interpreter, StateMachine } from 'xstate';
+import {TransactionData} from "@/transaction/transaction.class";
 
 export enum ResponseStatusRange { ok = 1, warn = 2 , failure = 3 };
 export type Identity = Record<'primaryPid' | 'workerPid' | 'worker', number> & Record<'url', URL> & Partial<Record<'uuid', string>>;
@@ -18,6 +19,7 @@ export type ChainActionStatusRange = ResponseStatusRange.ok | ResponseStatusRang
 
 @Injectable()
 export class AppService implements OnModuleDestroy {
+  private readonly urlRegExp: RegExp = /^(https?:\/\/)?([\w.-]+)\.([a-z]{2,})(:\d{1,5})?([/?:].*)?$/i;
   private readonly blockchain: Blockchain;
   private readonly logger: Logger = new Logger(AppService.name);
   private readonly blockchainStateMachine;
@@ -76,10 +78,11 @@ export class AppService implements OnModuleDestroy {
     let returnValue: ChainActionStatusRange = ResponseStatusRange.ok
 
     this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
+      const { href }: { href: string } = this.blockchain.currentNodeUrl;
       const requestOptions: AxiosRequestConfig<URL> = {
         responseType: 'json',
-        headers:{
-          'client': this.blockchain.currentNodeUrl.href,
+        headers: {
+          'x-network-node': href
         }
       };
       const body: TransactionI = newTransaction;
@@ -105,12 +108,27 @@ export class AppService implements OnModuleDestroy {
     return returnValue;
   }
 
-  public mine(): MineResponse {
+  public async mine(): Promise<MineResponse> {
     const transaction: TransactionI = this.blockchain.createNewTransaction(null, '00', this.nodeUUID);
 
-    this.blockchain.addNewTransactionToPendingTransaction(transaction);
+    // this.blockchain.addNewTransactionToPendingTransaction(transaction);
+
+    const networkNodeUrl: URL = this.blockchain.currentNodeUrl;
+    const postUrl: URL = new URL('/v1/transaction/broadcast', networkNodeUrl);
+    const body: TransactionData = transaction;
+    const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
+
+    const post$: Observable<AxiosResponse> = this.httpService.post(`${postUrl}`, body, requestOptions);
+
+    const axiosResponse: AxiosResponse<any, any> = await lastValueFrom(post$);
+
+  // too
 
     const payload: MinePayload = this.getCreateMineResponsePayload();
+
+    const mineResponse: MineResponse = this.createMineResponse(payload);
+
+    this.broadcastNewBlockToNetwork(mineResponse.block);
 
     return this.createMineResponse(payload);
   }
@@ -216,12 +234,20 @@ export class AppService implements OnModuleDestroy {
     return ResponseStatusRange.failure;
   }
 
+  public isSenderAllowedToSendTransaction(networkNodeSender: string): boolean {
+    const { networkNodes }: { networkNodes: Array<URL> } = this.getBlockchain();
+    const networkNodesClone: string[] = [...networkNodes].map((nodeUrl: URL): string => nodeUrl.href);
+
+    return networkNodesClone.includes(networkNodeSender);
+  }
+
   private getCreateMineResponsePayload(): MinePayload {
     const lastBlock: BlockI = this.getLastBlock();
-    const { index }: { index: number } = lastBlock;
+    const { index: lastBlockIndex }: { index: number } = lastBlock;
+    const index: number = inc(lastBlockIndex);
     const previousBlockHash: string = lastBlock.hash;
-    const transactions: TransactionI[] = this.blockchain.pendingTransactions
-    const currentBlockData: CurrentBlockData = { index: inc(index), transactions };
+    const transactions: TransactionI[] = this.blockchain.pendingTransactions;
+    const currentBlockData: CurrentBlockData = { index, transactions };
     const nonce: number = this.blockchain.proofOfWork(previousBlockHash, currentBlockData);
     const hash: string = this.blockchain.calculateHash(previousBlockHash, currentBlockData, nonce);
 
@@ -234,5 +260,30 @@ export class AppService implements OnModuleDestroy {
     const identity: Identity = this.identity;
 
     return { note, block, identity };
+  }
+
+  private broadcastNewBlockToNetwork(block: BlockI): void | HttpException {
+    const registerNodeObservables: Observable<AxiosResponse>[] = [];
+
+    const { href }: { href: string } = this.blockchain.currentNodeUrl;
+    const requestOptions: AxiosRequestConfig<URL> = {
+      responseType: 'json',
+      headers: {
+        'x-network-node': href
+      }
+    };
+    this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
+      const postUrlV1ReceiveNewBlock: URL = new URL('/v1/receive-new-block', networkNodeUrl);
+
+      const post$: Observable<AxiosResponse<URL, boolean>> = this.httpService.post(`${postUrlV1ReceiveNewBlock}`, block, requestOptions);
+
+      registerNodeObservables.push(post$);
+    });
+
+    forkJoin<AxiosResponse[]>(registerNodeObservables).subscribe((responses: AxiosResponse<URL>[]): void => {
+      responses.forEach((response: AxiosResponse<URL>): void => {
+        this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
+      });
+    });
   }
 }

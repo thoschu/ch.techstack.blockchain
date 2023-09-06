@@ -1,4 +1,5 @@
 import process from 'node:process';
+import { IncomingHttpHeaders } from 'http';
 import {
   Body,
   Controller,
@@ -21,7 +22,8 @@ import {
   PendingTransactionPayload,
   ResponseStatusRange
 } from './app.service';
-import {TransactionI} from "@/transaction/transaction.interface";
+import { TransactionI } from '@/transaction/transaction.interface';
+import { prop } from 'ramda';
 
 @ApiTags('v1')
 @Controller('v1')
@@ -44,6 +46,14 @@ export class AppV1Controller {
     return this.appService.mine();
   }
 
+  @Post('/receive-new-block')
+  @Header('Cache-Control', 'none')
+  @HttpCode(HttpStatus.CREATED)
+  public receiveNewBlock(): MineResponse {
+    this.logger.log(`> /receive-new-block :: ${process.pid}`);
+    return this.appService.mine();
+  }
+
   @Post('/transaction')
   @Header('Cache-Control', 'none')
   @HttpCode(HttpStatus.CREATED)
@@ -53,10 +63,11 @@ export class AppV1Controller {
   })
   public transaction(@Body() body: TransactionI, @Req() request: Request): number | HttpException  {
     this.logger.log(`> /v1/transaction :: ${process.pid}`);
-    const { headers } = request;
-    console.log(headers.client);
-    // return isNodeAllowedTo ? this.appService.addNewTransactionToPendingTransaction(body) : -1;
-    return this.appService.addNewTransactionToPendingTransaction(body) ?? new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
+    const headers: IncomingHttpHeaders = request.headers;
+    const xNetworkNodeHeader: string = prop<string>('x-network-node', headers);
+    const isSenderAllowedToSendTransaction: boolean = this.appService.isSenderAllowedToSendTransaction(xNetworkNodeHeader);
+
+    return isSenderAllowedToSendTransaction ? this.appService.addNewTransactionToPendingTransaction(body) : new HttpException('NOT ACCEPTABLE', HttpStatus.NOT_ACCEPTABLE);
   }
 
   @Post('/transaction/broadcast')

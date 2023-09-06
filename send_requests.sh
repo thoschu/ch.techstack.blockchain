@@ -1,13 +1,11 @@
 #!/bin/bash
 
-# Anzahl der Anfragen
 num_requests=6
 
-# Endpunkt-URL
 endpoint_url="http://localhost:3003/v1/register-broadcast-node"
 
 # Schleife für die Anfragen
-for ((i=4; i<=$num_requests; i++)); do
+for ((i=3; i<=$num_requests; i++)); do
   echo "Senden von Anfrage $i an $endpoint_url"
   payload_data="{\"url\": \"http://localhost:300$i\"}"
   echo "$payload_data"
