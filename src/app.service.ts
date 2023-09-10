@@ -1,14 +1,14 @@
-import { randomUUID} from 'node:crypto';
+import { createVerify, createSign, generateKeyPairSync, KeyPairSyncResult, RSAKeyPairOptions, randomUUID, Sign, Verify } from 'node:crypto';
 import { HttpService } from '@nestjs/axios';
-import {HttpException, Inject, Injectable, Logger, OnModuleDestroy} from '@nestjs/common';
+import { HttpException, Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Blockchain, CurrentBlockData } from '@/blockchain';
 import { BlockI } from '@/block/block.interface';
 import { TransactionI } from '@/transaction/transaction.interface';
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { and, equals, inc, isEmpty, not} from 'ramda';
-import {catchError, forkJoin, lastValueFrom, noop, Observable, of, Subscription, tap, using} from 'rxjs';
+import { catchError, forkJoin, lastValueFrom, noop, Observable, of, Subscription, tap, using } from 'rxjs';
 import { assign, createMachine, interpret, Interpreter, StateMachine } from 'xstate';
-import {TransactionData} from "@/transaction/transaction.class";
+import { TransactionData } from "@/transaction/transaction.class";
 
 export enum ResponseStatusRange { ok = 1, warn = 2 , failure = 3 };
 export type Identity = Record<'primaryPid' | 'workerPid' | 'worker', number> & Record<'url', URL> & Partial<Record<'uuid', string>>;
@@ -16,6 +16,18 @@ export type MineResponse = Record<'note', string> & Record<'block', BlockI>  & R
 export type MinePayload = { nonce: number, previousBlockHash: string, hash: string };
 export type PendingTransactionPayload = Record<'value', unknown> & Record<'sender' | 'recipient', string> & Partial<Record<'data', unknown>>;
 export type ChainActionStatusRange = ResponseStatusRange.ok | ResponseStatusRange.warn | ResponseStatusRange.failure;
+export type BlockSignature = Record<'publicKey', string> & Record<'signature', string>;
+
+export enum RoutesEnum {
+  blockchain = '/blockchain',
+  mine = '/mine',
+  receiveNewBlock = '/receive-new-block',
+  transaction = '/transaction',
+  transactionBroadcast = '/transaction/broadcast',
+  registerBroadcastNode = '/register-broadcast-node',
+  registerNode = '/register-node',
+  registerNodesBulk = '/register-nodes-bulk'
+}
 
 @Injectable()
 export class AppService implements OnModuleDestroy {
@@ -45,6 +57,7 @@ export class AppService implements OnModuleDestroy {
       }
     });
 
+    // ToDo: for smart contracts
     // this.blockchainStateMachineService = interpret(this.blockchainStateMachine)
     //     .onTransition((state) => console.log(state.value))
     //     .start();
@@ -108,29 +121,70 @@ export class AppService implements OnModuleDestroy {
     return returnValue;
   }
 
-  public async mine(): Promise<MineResponse> {
+  public async mine(): Promise<void | MineResponse> {
     const transaction: TransactionI = this.blockchain.createNewTransaction(null, '00', this.nodeUUID);
+    // miner identity
+    // this.blockchain.addNewTransactionToPendingTransaction(transaction)
+    // const { currentNodeUrl }: { currentNodeUrl: URL } =  this.blockchain;
+    // const postUrl: URL = new URL('/v1/transaction/broadcast', currentNodeUrl);
+    // const body: TransactionData = transaction;
+    // const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
+    //
+    // const post$: Observable<AxiosResponse> = this.httpService.post(`${postUrl}`, body, requestOptions);
+    //
+    // const axiosResponse: AxiosResponse<any, any> = await lastValueFrom(post$);
 
-    // this.blockchain.addNewTransactionToPendingTransaction(transaction);
+    // todo
 
-    const networkNodeUrl: URL = this.blockchain.currentNodeUrl;
-    const postUrl: URL = new URL('/v1/transaction/broadcast', networkNodeUrl);
-    const body: TransactionData = transaction;
-    const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
+    const lastBlock: BlockI = this.getLastBlock();
+    const { index: lastBlockIndex }: { index: number } = lastBlock;
+    const index: number = inc(lastBlockIndex);
+    const previousBlockHash: string = lastBlock.hash;
+    const transactions: TransactionI[] = this.blockchain.pendingTransactions;
+    const currentBlockData: CurrentBlockData = { index, transactions };
+    const nonce: number = this.blockchain.proofOfWork(previousBlockHash, currentBlockData);
+    const hash: string = this.blockchain.calculateHash(previousBlockHash, currentBlockData, nonce);
 
-    const post$: Observable<AxiosResponse> = this.httpService.post(`${postUrl}`, body, requestOptions);
 
-    const axiosResponse: AxiosResponse<any, any> = await lastValueFrom(post$);
+    const block: BlockI =  this.blockchain.createNewBlockInChain(nonce, previousBlockHash, hash);
 
-  // too
 
-    const payload: MinePayload = this.getCreateMineResponsePayload();
+    const { href }: { href: string } = this.blockchain.currentNodeUrl;
+    const requestOptions: AxiosRequestConfig<URL> = {
+      responseType: 'json',
+      headers: {
+        'x-network-node': href
+      }
+    };
 
-    const mineResponse: MineResponse = this.createMineResponse(payload);
+    const axiosRequests: Array<Observable<AxiosResponse<BlockI, unknown>>> = this.blockchain.networkNodes.map((networkNodeUrl: URL) =>
+        this.httpService.post<BlockI>(`${new URL('/v1/receive-new-block', networkNodeUrl)}`, block, requestOptions));
 
-    this.broadcastNewBlockToNetwork(mineResponse.block);
+    return await Promise
+        .all(axiosRequests)
+        .then((responses: Array<Observable<AxiosResponse<BlockI, unknown>>>): void => {
+          // 'responses' ist ein Array von Axios-Antworten
+          console.log('Alle Anfragen wurden erfolgreich abgeschlossen.');
 
-    return this.createMineResponse(payload);
+          // Hier können Sie auf die Daten der einzelnen Antworten zugreifen
+          responses.forEach(response => {
+            console.log(response);
+          });
+
+          // Todo mining reward transaction broadcast to/with  /transaction/broadcast endpoint
+        })
+        .then(res => {
+
+          const payload: MinePayload = { nonce, previousBlockHash, hash };
+          return this.createMineResponse(payload);
+        })
+        .catch(error => {
+          console.error('Ein Fehler ist aufgetreten:', error);
+        });
+
+
+    // const payload: MinePayload = { nonce, previousBlockHash, hash };
+    // return this.createMineResponse(payload);
   }
 
   public registerAndBroadcastNode(url: string): ChainActionStatusRange {
@@ -285,5 +339,35 @@ export class AppService implements OnModuleDestroy {
         this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
       });
     });
+  }
+
+  private signBlock(block: BlockI): BlockSignature {
+    const options: RSAKeyPairOptions<'pem', 'pem'> = {
+      modulusLength: 4096,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem',
+      },
+      privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem',
+      }
+    };
+    const { privateKey, publicKey }: KeyPairSyncResult<string, string> = generateKeyPairSync('rsa', options);
+    const dataToSignString: string = JSON.stringify(block);
+    const sign: Sign = createSign('RSA-SHA256').update(dataToSignString).end();
+    const signature: string = sign.sign(privateKey, 'hex');
+
+    return {
+      publicKey,
+      signature
+    };
+  }
+
+  private verifyBlock({ publicKey, signature }: BlockSignature, block: BlockI): boolean {
+    const dataToSignString: string = JSON.stringify(block);
+    const verify: Verify = createVerify('RSA-SHA256').update(dataToSignString).end();
+
+    return verify.verify(publicKey, signature);
   }
 }

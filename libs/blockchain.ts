@@ -28,7 +28,7 @@ export class Blockchain {
     public get pendingTransactions(): TransactionI[] {
         return this._pendingTransactions;
     }
-    private set pendingTransactions(value: TransactionI[]) {
+    public set pendingTransactions(value: TransactionI[]) {
         this._pendingTransactions = value;
     }
 

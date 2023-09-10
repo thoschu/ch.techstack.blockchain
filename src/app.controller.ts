@@ -20,10 +20,11 @@ import {
   ChainActionStatusRange,
   MineResponse,
   PendingTransactionPayload,
-  ResponseStatusRange
+  ResponseStatusRange, RoutesEnum
 } from './app.service';
 import { TransactionI } from '@/transaction/transaction.interface';
-import { prop } from 'ramda';
+import { equals, inc, prop } from 'ramda';
+import { BlockI } from '@/block/block.interface';
 
 @ApiTags('v1')
 @Controller('v1')
@@ -41,7 +42,7 @@ export class AppV1Controller {
   @Get('/mine')
   @Header('Cache-Control', 'none')
   @HttpCode(HttpStatus.CREATED)
-  public mine(): MineResponse {
+  public mine(): any {
     this.logger.log(`> /mine :: ${process.pid}`);
     return this.appService.mine();
   }
@@ -49,9 +50,21 @@ export class AppV1Controller {
   @Post('/receive-new-block')
   @Header('Cache-Control', 'none')
   @HttpCode(HttpStatus.CREATED)
-  public receiveNewBlock(): MineResponse {
+  public receiveNewBlock(@Body() body: BlockI): MineResponse | unknown {
     this.logger.log(`> /receive-new-block :: ${process.pid}`);
-    return this.appService.mine();
+    // this.appService.getBlockchain().chain.push(body);
+    const blockChain: Blockchain = this.appService.getBlockchain();
+    const lastBlock: BlockI = blockChain.getLastBlock();
+    const correctHash: boolean = equals(lastBlock.hash, body.previousBlockHash);
+    const correctIndex: boolean = equals(inc(lastBlock.index), body.index);
+
+    if(correctHash && correctIndex) {
+      blockChain.chain.push(body);
+      blockChain.pendingTransactions = [];
+      return { note: `New block received and accepted in the chain.`, block: body };
+    } else {
+      return { note: `New block rejected and NOT accepted in the chain.`, block: body };
+    }
   }
 
   @Post('/transaction')
