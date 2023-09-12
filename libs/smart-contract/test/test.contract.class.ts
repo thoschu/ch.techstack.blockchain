@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-import { ContractI } from '@/smart-contract/contract.interface';
+import { ContractI } from '@/smart-contract/contract.interface';    // Import the interface
 
 class TestContract implements ContractI {
     private balances: Record<string, number> = {}; // Speichert die Kontostände der Benutzer

@@ -87,7 +87,7 @@ export class AppService implements OnModuleDestroy {
   }
 
   public broadcastTransactionToNetwork(newTransaction: TransactionI): ChainActionStatusRange {
-    const registerNodeObservables: Observable<AxiosResponse>[] = [];
+    const registerNodeObservables: Observable<AxiosResponse<URL, boolean>>[] = [];
     let returnValue: ChainActionStatusRange = ResponseStatusRange.ok
 
     this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
@@ -121,34 +121,20 @@ export class AppService implements OnModuleDestroy {
     return returnValue;
   }
 
-  public async mine(): Promise<void | MineResponse> {
+  public mine(): any {
     const transaction: TransactionI = this.blockchain.createNewTransaction(null, '00', this.nodeUUID);
-    // miner identity
-    // this.blockchain.addNewTransactionToPendingTransaction(transaction)
-    // const { currentNodeUrl }: { currentNodeUrl: URL } =  this.blockchain;
-    // const postUrl: URL = new URL('/v1/transaction/broadcast', currentNodeUrl);
-    // const body: TransactionData = transaction;
-    // const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
-    //
-    // const post$: Observable<AxiosResponse> = this.httpService.post(`${postUrl}`, body, requestOptions);
-    //
-    // const axiosResponse: AxiosResponse<any, any> = await lastValueFrom(post$);
-
-    // todo
+    // miner identity (mining reward) at the end if the transactions
+    this.blockchain.addNewTransactionToPendingTransaction(transaction);
 
     const lastBlock: BlockI = this.getLastBlock();
     const { index: lastBlockIndex }: { index: number } = lastBlock;
+    const { hash: previousBlockHash }: { hash: string } = lastBlock;
     const index: number = inc(lastBlockIndex);
-    const previousBlockHash: string = lastBlock.hash;
     const transactions: TransactionI[] = this.blockchain.pendingTransactions;
     const currentBlockData: CurrentBlockData = { index, transactions };
     const nonce: number = this.blockchain.proofOfWork(previousBlockHash, currentBlockData);
     const hash: string = this.blockchain.calculateHash(previousBlockHash, currentBlockData, nonce);
-
-
-    const block: BlockI =  this.blockchain.createNewBlockInChain(nonce, previousBlockHash, hash);
-
-
+    const block: BlockI = this.blockchain.createNewBlockInChain(nonce, previousBlockHash, hash);
     const { href }: { href: string } = this.blockchain.currentNodeUrl;
     const requestOptions: AxiosRequestConfig<URL> = {
       responseType: 'json',
@@ -157,34 +143,24 @@ export class AppService implements OnModuleDestroy {
       }
     };
 
-    const axiosRequests: Array<Observable<AxiosResponse<BlockI, unknown>>> = this.blockchain.networkNodes.map((networkNodeUrl: URL) =>
-        this.httpService.post<BlockI>(`${new URL('/v1/receive-new-block', networkNodeUrl)}`, block, requestOptions));
+    const axiosRequests: Array<Observable<AxiosResponse<BlockI, unknown>>> =
+        this.blockchain.networkNodes.map((networkNodeUrl: URL) =>
+          this.httpService.post<BlockI>(`${new URL('/v1/receive-new-block', networkNodeUrl)}`, block, requestOptions));
 
-    return await Promise
-        .all(axiosRequests)
-        .then((responses: Array<Observable<AxiosResponse<BlockI, unknown>>>): void => {
-          // 'responses' ist ein Array von Axios-Antworten
-          console.log('Alle Anfragen wurden erfolgreich abgeschlossen.');
+    const forkJoinSubscription: Subscription = forkJoin<AxiosResponse[]>(axiosRequests).subscribe((responses: AxiosResponse<URL>[]): void => {
+      responses.forEach((response: AxiosResponse<URL>): void => {
+        //this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
 
-          // Hier können Sie auf die Daten der einzelnen Antworten zugreifen
-          responses.forEach(response => {
-            console.log(response);
-          });
+        // console.log('##############');
+        // console.log(response.status);
+        // console.log(response.data);
+      });
+    });
 
-          // Todo mining reward transaction broadcast to/with  /transaction/broadcast endpoint
-        })
-        .then(res => {
+    this.subscriptions.push(forkJoinSubscription);
 
-          const payload: MinePayload = { nonce, previousBlockHash, hash };
-          return this.createMineResponse(payload);
-        })
-        .catch(error => {
-          console.error('Ein Fehler ist aufgetreten:', error);
-        });
-
-
-    // const payload: MinePayload = { nonce, previousBlockHash, hash };
-    // return this.createMineResponse(payload);
+    const payload: MinePayload = { nonce, previousBlockHash, hash };
+    return this.createMineResponse(payload);
   }
 
   public registerAndBroadcastNode(url: string): ChainActionStatusRange {
@@ -220,36 +196,38 @@ export class AppService implements OnModuleDestroy {
       returnValue = ResponseStatusRange.failure;
     }
 
-    this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
-      const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
-      const body: Record<'url', URL> = { url: newNodeUrl };
-      const postUrlV1RegisterNode: URL = new URL('/v1/register-node', networkNodeUrl);
-      const post$: Observable<AxiosResponse<URL, boolean>> = this.httpService.post(`${postUrlV1RegisterNode}`, body, requestOptions);
+    if(returnValue === ResponseStatusRange.ok) {
+      this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
+        const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
+        const body: Record<'url', URL> = { url: newNodeUrl };
+        const postUrlV1RegisterNode: URL = new URL('/v1/register-node', networkNodeUrl);
+        const post$: Observable<AxiosResponse<URL, boolean>> = this.httpService.post(`${postUrlV1RegisterNode}`, body, requestOptions);
 
-      registerNodeObservables.push(post$);
-    });
-
-    const forkJoinSubscription: Subscription = forkJoin<AxiosResponse[]>(registerNodeObservables).subscribe((responses: AxiosResponse<URL>[]): void => {
-      const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
-      const data: { allNetworkNodes: URL[] } = { allNetworkNodes: [...this.blockchain.networkNodes, this.blockchain.currentNodeUrl]};
-
-      responses.forEach((response: AxiosResponse<URL>): void => {
-        this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
+        registerNodeObservables.push(post$);
       });
 
-      const postUrlV1RegisterNodesBulk: URL = new URL('/v1/register-nodes-bulk', newNodeUrl);
-      const postSubscription: Subscription = this.httpService
-        .post(`${postUrlV1RegisterNodesBulk}`, data, requestOptions)
-        .subscribe((response: AxiosResponse): void => {
-          this.logger.log(`> ${postUrlV1RegisterNodesBulk} > ${response.status} > ${JSON.stringify(response.data)}`);
+      const forkJoinSubscription: Subscription = forkJoin<AxiosResponse[]>(registerNodeObservables).subscribe((responses: AxiosResponse<URL>[]): void => {
+        const requestOptions: AxiosRequestConfig<URL> = { responseType: 'json' };
+        const data: { allNetworkNodes: URL[] } = { allNetworkNodes: [...this.blockchain.networkNodes, this.blockchain.currentNodeUrl]};
+
+        responses.forEach((response: AxiosResponse<URL>): void => {
+          this.logger.log(`> ${response.config.url} > ${response.status} > ${JSON.stringify(response.data)}`);
         });
 
-      this.subscriptions.push(postSubscription);
-      // postSubscription.unsubscribe();
-    });
+        const postUrlV1RegisterNodesBulk: URL = new URL('/v1/register-nodes-bulk', newNodeUrl);
+        const postSubscription: Subscription = this.httpService
+            .post(`${postUrlV1RegisterNodesBulk}`, data, requestOptions)
+            .subscribe((response: AxiosResponse): void => {
+              this.logger.log(`> ${postUrlV1RegisterNodesBulk} > ${response.status} > ${JSON.stringify(response.data)}`);
+            });
 
-    this.subscriptions.push(forkJoinSubscription);
-    // forkJoinSubscription.unsubscribe();
+        this.subscriptions.push(postSubscription);
+        // postSubscription.unsubscribe();
+      });
+
+      this.subscriptions.push(forkJoinSubscription);
+      // forkJoinSubscription.unsubscribe();
+    }
 
     return returnValue;
   }

@@ -51,6 +51,7 @@
     "ramda": "^0.29.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.7.2",
     "uuid": "^9.0.0",
     "xstate": "^4.38.2"
   },
@@ -101,5 +102,9 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.7",
+    "utf-8-validate": "^5.0.10"
   }
 }

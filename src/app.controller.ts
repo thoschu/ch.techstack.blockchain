@@ -32,6 +32,15 @@ export class AppV1Controller {
   private readonly logger: Logger = new Logger('AppV1Controller');
   constructor(private readonly appService: AppService) {}
 
+  @Post('/connect-socket')
+  public socketIoConnect(@Body() body: Record<'url', string>): unknown| HttpException {
+    this.logger.log(`> /register-broadcast-node :: ${process.pid}`);
+    const { url }: Record<'url', string> = body;
+    const socket = require('socket.io-client')(url);
+
+    return socket;
+  }
+
   @Get('/blockchain')
   @Header('Cache-Control', 'none')
   public blockchain(): Blockchain {
@@ -44,7 +53,9 @@ export class AppV1Controller {
   @HttpCode(HttpStatus.CREATED)
   public mine(): any {
     this.logger.log(`> /mine :: ${process.pid}`);
-    return this.appService.mine();
+    const result = this.appService.mine();
+    console.log(result);
+    return result;
   }
 
   @Post('/receive-new-block')
@@ -52,18 +63,21 @@ export class AppV1Controller {
   @HttpCode(HttpStatus.CREATED)
   public receiveNewBlock(@Body() body: BlockI): MineResponse | unknown {
     this.logger.log(`> /receive-new-block :: ${process.pid}`);
-    // this.appService.getBlockchain().chain.push(body);
     const blockChain: Blockchain = this.appService.getBlockchain();
     const lastBlock: BlockI = blockChain.getLastBlock();
-    const correctHash: boolean = equals(lastBlock.hash, body.previousBlockHash);
-    const correctIndex: boolean = equals(inc(lastBlock.index), body.index);
+    const correctHash: boolean = equals(lastBlock.hash, prop('_previousBlockHash', body));
+    const correctIndex: boolean = equals(inc(lastBlock.index), prop('_index', body));
+
+    console.log('########-------------------------------------######');
+    console.log(lastBlock);
+    console.log(body);
 
     if(correctHash && correctIndex) {
       blockChain.chain.push(body);
       blockChain.pendingTransactions = [];
-      return { note: `New block received and accepted in the chain.`, block: body };
+      return { note: `!!!! New block received and accepted in the chain.`, block: body };
     } else {
-      return { note: `New block rejected and NOT accepted in the chain.`, block: body };
+      return { note: `???? New block rejected and NOT accepted in the chain.`, block: body };
     }
   }
 
@@ -89,14 +103,14 @@ export class AppV1Controller {
   public transactionBroadcast(@Body() body: TransactionData): Record<'note', string> | HttpException {
     const { value, sender, recipient, data }: PendingTransactionPayload = body;
     const transaction: TransactionI = this.appService.createNewTransaction({ value, sender, recipient, data });
-    const addNewTransactionToPendingTransactionStatus: ChainActionStatusRange = this.appService.addNewTransactionToPendingTransaction(transaction);
+    const transactionIndex: number = this.appService.addNewTransactionToPendingTransaction(transaction);
     const broadcastTransactionToNetworkStatus: ChainActionStatusRange = this.appService.broadcastTransactionToNetwork(transaction);
 
-    if(broadcastTransactionToNetworkStatus !== ResponseStatusRange.ok || addNewTransactionToPendingTransactionStatus !== ResponseStatusRange.ok) {
-      return { note: `Transaction created and broadcast was not successfully.`}
+    if(broadcastTransactionToNetworkStatus !== ResponseStatusRange.ok) {
+      return { note: `❗ Transaction created and broadcast was not successfully.`}
     }
 
-    return { note: `Transaction created and broadcast successfully.`}
+    return { note: `✅ Transaction created and broadcast successfully in block with index: ${transactionIndex}.`}
   }
 
   @Post('/register-broadcast-node')
@@ -110,11 +124,11 @@ export class AppV1Controller {
 
     switch (result) {
       case ResponseStatusRange.ok:
-        return { note: `New node with the url: ${url} registered with network successfully.`, status: `${result}` }
+        return { note: `✅ New node with the url: ${url} registered with network successfully.`, status: `${result}` }
       case ResponseStatusRange.warn:
       case ResponseStatusRange.failure:
       default:
-        return { note: `New node with the url: ${url} is not valid.`, status: `${result}` }
+        return { note: `❗ New node with the url: ${url} is not valid.`, status: `${result}` }
     }
   }
 

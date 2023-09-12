@@ -1,17 +1,17 @@
 import cluster, { Worker } from 'node:cluster';
 import { availableParallelism } from 'node:os';
 import process from 'node:process';
-
 import { DynamicModule, INestApplication, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-
 import helmet, { HelmetOptions } from 'helmet';
 import { prop } from 'ramda';
+import { Server } from 'socket.io';
 
 import 'dotenv/config';
 
 import { AppModule } from './app.module';
 import {DocumentBuilder, SwaggerModule} from "@nestjs/swagger";
+import {DefaultEventsMap} from "socket.io/dist/typed-events";
 
 const localDevCPUs: number = 1;
 const numCPUs: number = localDevCPUs ?? availableParallelism();
@@ -47,6 +47,16 @@ if (cluster.isPrimary) {
         const url: URL = new URL(argv[3]) ?? new URL(`${protocol}://${host}:${port}`)
         const appDynamicModule: DynamicModule = AppModule.register({ primaryPid, workerPid, worker, url });
         const app: INestApplication = await NestFactory.create(appDynamicModule);
+        const io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, unknown> = new Server(app.getHttpServer());
+        console.log(io);
+        io.on('connection', (socket) => {
+          console.log('Ein Knoten hat sich verbunden.');
+
+          // Hier können Sie auf Ereignisse von diesem Knoten hören und Nachrichten senden
+          socket.on('customEvent', (data) => {
+            console.log('Nachricht von einem Knoten:', data);
+          });
+        });
         const helmetOptions: HelmetOptions = {
           crossOriginEmbedderPolicy: false,
           crossOriginOpenerPolicy: true,
@@ -75,6 +85,11 @@ if (cluster.isPrimary) {
             .build();
         const document = SwaggerModule.createDocument(app, config);
         SwaggerModule.setup('api', app, document);
+
+        // https://socket.io/docs/v4/using-multiple-nodes
+        io.on("connection", (socket): void => {
+          console.log(socket);
+        });
 
         await app.listen(port);
 
