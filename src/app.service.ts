@@ -70,6 +70,8 @@ export class AppService implements OnModuleDestroy {
     this.subscriptions.forEach((subscription: Subscription): void => subscription.unsubscribe())
   }
 
+  public chainIsValid(blockchain: any): any {}
+
   public getBlockchain(): Blockchain {
     return this.blockchain;
   }

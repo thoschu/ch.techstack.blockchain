@@ -6,10 +6,21 @@ import { BlockI } from '@/block/block.interface';
 import { TransactionI } from '@/transaction/transaction.interface';
 import { Transaction, TransactionData } from '@/transaction/transaction.class';
 
-export type CurrentBlockData = Record<'transactions', TransactionI[]> & Record<'index', number>;
+import { head } from 'ramda';
+
+export type CurrentBlockData = Record<'transactions', ReadonlyArray<TransactionI>> & Record<'index', number>;
+
+export interface BlockchainIsValidI {
+    valid(): boolean;
+}
 
 export class Blockchain {
     #_difficulty: number;
+    #_genesisBlockData = {
+        nonce: -1,
+        previousBlockHash: '',
+        hash: '0'
+    }
     private readonly _chain: BlockI[] = [];
     private _pendingTransactions: TransactionI[] = [];
     private readonly _currentNodeUrl: URL;
@@ -20,6 +31,36 @@ export class Blockchain {
         this._currentNodeUrl = currentNodeUrl;
         this.#_difficulty = difficulty;
     }
+
+    public blockchainIsValid(chain: BlockI[]): any {
+        const genesisBlock: BlockI = head<BlockI>(chain);
+        let validChain: boolean = true;
+
+        for (let i: number = 1; i < chain.length; i++) {
+            const currentBlock: BlockI = chain[i];
+            const currentBlockHash: string = currentBlock.hash
+            const currentBlockNonce: number = currentBlock.nonce;
+            const { transactions }: { transactions: readonly TransactionI[]} = currentBlock;
+            const index: number = currentBlock.index;
+            const previousBlock: BlockI = chain[i - 1];
+            const previousBlockHash: string = previousBlock.previousBlockHash;
+            const blockHash: string = this.calculateHash(previousBlockHash, { transactions, index }, currentBlockNonce);
+
+            console.log(blockHash);
+            if(blockHash.substring(0, 4) !== '0000') validChain = false;
+            if(currentBlockHash !== previousBlockHash) validChain = false;
+        }
+
+
+        const correctNonce: boolean = equals<number>(genesisBlock.nonce, this.#_genesisBlockData.nonce);
+        const correctPreviousBlockHash: boolean = equals<string>(genesisBlock.previousBlockHash, this.#_genesisBlockData.previousBlockHash);
+        const correctHash: boolean = equals<string>(genesisBlock.hash, this.#_genesisBlockData.hash);
+        const correctTransactions: boolean = equals<number>(genesisBlock.transactions.length, 0);
+
+        if(!correctNonce || !correctPreviousBlockHash || !correctHash || !correctTransactions) validChain = false;
+
+        return validChain;
+    }w
 
     public get chain(): BlockI[] {
         return this._chain;
@@ -40,7 +81,7 @@ export class Blockchain {
         return this._currentNodeUrl;
     }
 
-    public proofOfWork(previousBlockHash: string, currentBlockData: CurrentBlockData): any {
+    public proofOfWork(previousBlockHash: string, currentBlockData: CurrentBlockData): number {
         const targetPrefix: string = '0'.repeat(this.#_difficulty);
         let nonce: number = 0;
         let hash: string = this.calculateHash(previousBlockHash, currentBlockData, nonce);
@@ -89,7 +130,7 @@ export class Blockchain {
     }
 
     private initChainWithGenesisBlock(): void {
-        this.createNewBlockInChain(-1, '', '0');
+        this.createNewBlockInChain(this.#_genesisBlockData.nonce, this.#_genesisBlockData.previousBlockHash, this.#_genesisBlockData.hash);
     }
 
     private createNewBlock(nonce: number, previousBlockHash: string, hash: string): BlockI {
