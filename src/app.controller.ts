@@ -54,7 +54,7 @@ export class AppV1Controller {
   public mine(): any {
     this.logger.log(`> /mine :: ${process.pid}`);
     const result = this.appService.mine();
-    console.log(result);
+    //console.log(result);
     return result;
   }
 
@@ -65,12 +65,25 @@ export class AppV1Controller {
     this.logger.log(`> /receive-new-block :: ${process.pid}`);
     const blockChain: Blockchain = this.appService.getBlockchain();
     const lastBlock: BlockI = blockChain.getLastBlock();
-    const correctHash: boolean = equals(lastBlock.hash, prop('_previousBlockHash', body));
-    const correctIndex: boolean = equals(inc(lastBlock.index), prop('_index', body));
+    const previousBlockHash: string = prop<string, "_previousBlockHash", BlockI>('_previousBlockHash', body);
+    const lastBlockHash: string = prop<string, "_hash", BlockI>('_hash', lastBlock);
+    const index: number = prop<string, "_index", BlockI>('_index', body);
+    const lastBlockIndex: number = prop<string, "_index", BlockI>('_index', lastBlock);
+    const lastBlockIndexInc: number = inc(lastBlockIndex);
+    const correctHash: boolean = equals<string>(previousBlockHash, lastBlockHash);
+    const correctIndex: boolean = equals<number>(index, lastBlockIndexInc);
 
+    console.log('############');
+    console.log(previousBlockHash);
+    console.log(lastBlockHash);
+    console.log(index);
+    console.log(lastBlockIndex);
     console.log('########-------------------------------------######');
     console.log(lastBlock);
     console.log(body);
+    console.log(correctHash);
+    console.log(correctIndex);
+    console.log(correctHash && correctIndex);
 
     if(correctHash && correctIndex) {
       blockChain.chain.push(body);

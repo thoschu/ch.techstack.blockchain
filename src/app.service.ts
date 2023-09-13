@@ -121,7 +121,7 @@ export class AppService implements OnModuleDestroy {
     return returnValue;
   }
 
-  public mine(): any {
+  public mine(): MineResponse {
     const transaction: TransactionI = this.blockchain.createNewTransaction(null, '00', this.nodeUUID);
     // miner identity (mining reward) at the end if the transactions
     this.blockchain.addNewTransactionToPendingTransaction(transaction);
@@ -131,10 +131,14 @@ export class AppService implements OnModuleDestroy {
     const { hash: previousBlockHash }: { hash: string } = lastBlock;
     const index: number = inc(lastBlockIndex);
     const transactions: TransactionI[] = this.blockchain.pendingTransactions;
+    //console.log(transactions);
     const currentBlockData: CurrentBlockData = { index, transactions };
     const nonce: number = this.blockchain.proofOfWork(previousBlockHash, currentBlockData);
     const hash: string = this.blockchain.calculateHash(previousBlockHash, currentBlockData, nonce);
-    const block: BlockI = this.blockchain.createNewBlockInChain(nonce, previousBlockHash, hash);
+    const payload: MinePayload = { nonce, previousBlockHash, hash };
+    const mineResponse: MineResponse = this.createMineResponse(payload);
+    const block: BlockI = mineResponse.block;
+
     const { href }: { href: string } = this.blockchain.currentNodeUrl;
     const requestOptions: AxiosRequestConfig<URL> = {
       responseType: 'json',
@@ -159,8 +163,7 @@ export class AppService implements OnModuleDestroy {
 
     this.subscriptions.push(forkJoinSubscription);
 
-    const payload: MinePayload = { nonce, previousBlockHash, hash };
-    return this.createMineResponse(payload);
+    return mineResponse;
   }
 
   public registerAndBroadcastNode(url: string): ChainActionStatusRange {
