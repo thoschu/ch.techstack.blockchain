@@ -138,10 +138,13 @@ export class AppService implements OnModuleDestroy {
     //console.log(transactions);
     const currentBlockData: CurrentBlockData = { index, transactions };
     const nonce: number = this.blockchain.proofOfWork(previousBlockHash, currentBlockData);
+
     const hash: string = this.blockchain.calculateHash(previousBlockHash, currentBlockData, nonce);
     const payload: MinePayload = { nonce, previousBlockHash, hash };
     const mineResponse: MineResponse = this.createMineResponse(payload);
     const block: BlockI = mineResponse.block;
+
+    console.log(block);
 
     const { href }: { href: string } = this.blockchain.currentNodeUrl;
     const requestOptions: AxiosRequestConfig<URL> = {
@@ -278,19 +281,6 @@ export class AppService implements OnModuleDestroy {
     const networkNodesClone: string[] = [...networkNodes].map((nodeUrl: URL): string => nodeUrl.href);
 
     return networkNodesClone.includes(networkNodeSender);
-  }
-
-  private getCreateMineResponsePayload(): MinePayload {
-    const lastBlock: BlockI = this.getLastBlock();
-    const { index: lastBlockIndex }: { index: number } = lastBlock;
-    const index: number = inc(lastBlockIndex);
-    const previousBlockHash: string = lastBlock.hash;
-    const transactions: TransactionI[] = this.blockchain.pendingTransactions;
-    const currentBlockData: CurrentBlockData = { index, transactions };
-    const nonce: number = this.blockchain.proofOfWork(previousBlockHash, currentBlockData);
-    const hash: string = this.blockchain.calculateHash(previousBlockHash, currentBlockData, nonce);
-
-    return { nonce, previousBlockHash, hash };
   }
 
   private createMineResponse({ nonce, previousBlockHash, hash }: MinePayload): MineResponse  {
