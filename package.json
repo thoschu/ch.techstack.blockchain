@@ -12,7 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch -- 3002",
     "start:prod": "node dist/main",
-    "start:nodez": "npx concurrently \"npm run start:dev -- -- 3003 http://localhost:3003\" \"npm run start:dev -- -- 3004 http://localhost:3004\" \"npm run start:dev -- -- 3005 http://localhost:3005\" \"npm run start:dev -- -- 3006 http://localhost:3006\"",
+    "start:node:4": "npx concurrently \"npm run start:dev -- -- 3003 http://localhost:3003\" \"npm run start:dev -- -- 3004 http://localhost:3004\" \"npm run start:dev -- -- 3005 http://localhost:3005\" \"npm run start:dev -- -- 3006 http://localhost:3006\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
