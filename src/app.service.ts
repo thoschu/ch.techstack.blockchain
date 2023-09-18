@@ -127,7 +127,6 @@ export class AppService implements OnModuleDestroy {
 
   public mine(): MineResponse {
     const transaction: TransactionI = this.blockchain.createNewTransaction(null, '00', this.nodeUUID);
-    // miner identity (mining reward) at the end if the transactions
     this.blockchain.addNewTransactionToPendingTransaction(transaction);
 
     const lastBlock: BlockI = this.getLastBlock();
@@ -135,17 +134,12 @@ export class AppService implements OnModuleDestroy {
     const { hash: previousBlockHash }: { hash: string } = lastBlock;
     const index: number = inc(lastBlockIndex);
     const transactions: TransactionI[] = this.blockchain.pendingTransactions;
-    //console.log(transactions);
     const currentBlockData: CurrentBlockData = { index, transactions };
     const nonce: number = this.blockchain.proofOfWork(previousBlockHash, currentBlockData);
-
     const hash: string = this.blockchain.calculateHash(previousBlockHash, currentBlockData, nonce);
     const payload: MinePayload = { nonce, previousBlockHash, hash };
     const mineResponse: MineResponse = this.createMineResponse(payload);
     const block: BlockI = mineResponse.block;
-
-    console.log(block);
-
     const { href }: { href: string } = this.blockchain.currentNodeUrl;
     const requestOptions: AxiosRequestConfig<URL> = {
       responseType: 'json',
