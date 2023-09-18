@@ -41,6 +41,14 @@ export class AppV1Controller {
     return socket;
   }
 
+  @Post('/blockchainIsValid')
+  @Header('Cache-Control', 'none')
+  public blockchainIsValid(@Body() body: Array<BlockI>): boolean {
+    this.logger.log(`> /blockchainIsValid :: ${process.pid}`);
+    //console.log(body);
+    return this.appService.blockchainIsValid(body);
+  }
+
   @Get('/blockchain')
   @Header('Cache-Control', 'none')
   public blockchain(): Blockchain {
@@ -53,7 +61,7 @@ export class AppV1Controller {
   @HttpCode(HttpStatus.CREATED)
   public mine(): any {
     this.logger.log(`> /mine :: ${process.pid}`);
-    const result = this.appService.mine();
+    const result: MineResponse = this.appService.mine();
     //console.log(result);
     return result;
   }
@@ -72,18 +80,6 @@ export class AppV1Controller {
     const lastBlockIndexInc: number = inc(lastBlockIndex);
     const correctHash: boolean = equals<string>(previousBlockHash, lastBlockHash);
     const correctIndex: boolean = equals<number>(index, lastBlockIndexInc);
-
-    console.log('############');
-    console.log(previousBlockHash);
-    console.log(lastBlockHash);
-    console.log(index);
-    console.log(lastBlockIndex);
-    console.log('########-------------------------------------######');
-    console.log(lastBlock);
-    console.log(body);
-    console.log(correctHash);
-    console.log(correctIndex);
-    console.log(correctHash && correctIndex);
 
     if(correctHash && correctIndex) {
       blockChain.chain.push(body);
