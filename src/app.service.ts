@@ -88,11 +88,23 @@ export class AppService implements OnModuleDestroy {
     this.subscriptions.forEach((subscription: Subscription): void => subscription.unsubscribe())
   }
 
-  public getBlockByBlockHash(blockHash: string): BlockI {
+  public getTransactionById(transactionId: string): any {
+    const transactions: TransactionI[] = this.blockchain.pendingTransactions;
+
+  }
+
+  public getBlockByBlockHash(blockHash: string): BlockI | {} {
     const chain: BlockI[] = this.blockchain.chain;
     return chain.find(
       (block: BlockI): boolean => prop<string, '_hash', BlockI>('_hash', block) === blockHash,
-    );
+    ) ?? {
+      "_index": null,
+      "_timestamp": null,
+      "_transactions": null,
+      "_nonce": null,
+      "_previousBlockHash": null,
+      "_hash": null
+    };
   }
 
   public consensus(): Observable<Record<'note', string> & Record<'blockchain', Blockchain>> {

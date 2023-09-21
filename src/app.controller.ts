@@ -49,7 +49,7 @@ export class AppV1Controller {
 
   @Get('/block/:blockHash')
   @Header('Cache-Control', 'none')
-  public blockHash(@Param('blockHash') blockHash: string): BlockI {
+  public blockHash(@Param('blockHash') blockHash: string): BlockI | {} {
     //this.logger.log(`> /block/:blockHash :: ${process.pid}`);
 
     return this.appService.getBlockByBlockHash(blockHash);
