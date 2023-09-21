@@ -8,7 +8,7 @@ import {
   HttpCode,
   HttpException,
   HttpStatus,
-  Logger,
+  Logger, Param,
   Post,
   Redirect,
   Req,
@@ -47,6 +47,30 @@ export class AppV1Controller {
     return socket;
   }
 
+  @Get('/block/:blockHash')
+  @Header('Cache-Control', 'none')
+  public blockHash(@Param('blockHash') blockHash: string): BlockI {
+    //this.logger.log(`> /block/:blockHash :: ${process.pid}`);
+
+    return this.appService.getBlockByBlockHash(blockHash);
+  }
+
+  @Get('/transaction/:transactionId')
+  @Header('Cache-Control', 'none')
+  public transactionId(@Param('transactionId') transactionId: string): any {
+    //this.logger.log(`> /block/:blockHash :: ${process.pid}`);
+
+    return transactionId;
+  }
+
+  @Get('/address/:address')
+  @Header('Cache-Control', 'none')
+  public address(@Param('address') address: string): any {
+    //this.logger.log(`> /block/:blockHash :: ${process.pid}`);
+
+    return address;
+  }
+
   @Post('/blockchainIsValid')
   @Header('Cache-Control', 'none')
   public blockchainIsValid(@Body() body: Array<BlockI>): boolean {
@@ -58,7 +82,7 @@ export class AppV1Controller {
   @Get('/consensus')
   @Header('Cache-Control', 'none')
   public async consensus(): Promise<Record<'note', string> & Record<'blockchain', Blockchain>> {
-    //this.logger.log(`> /blockchainIsValid :: ${process.pid}`);
+    this.logger.log(`> /consensus :: ${process.pid}`);
 
     return await firstValueFrom(this.appService.consensus());
   }

@@ -20,8 +20,8 @@ import { Blockchain, CurrentBlockData } from '@/blockchain';
 import { BlockI } from '@/block/block.interface';
 import { TransactionI } from '@/transaction/transaction.interface';
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { and, equals, inc, isEmpty, isNil, not, or, prop } from 'ramda';
-import { forkJoin, map, Observable, Subscription } from 'rxjs';
+import { and, equals, inc, isEmpty, isNil, not, prop } from 'ramda';
+import { forkJoin, map, Observable, Subscriber, Subscription } from 'rxjs';
 import { createMachine } from 'xstate';
 
 export enum ResponseStatusRange {
@@ -88,52 +88,72 @@ export class AppService implements OnModuleDestroy {
     this.subscriptions.forEach((subscription: Subscription): void => subscription.unsubscribe())
   }
 
+  public getBlockByBlockHash(blockHash: string): BlockI {
+    const chain: BlockI[] = this.blockchain.chain;
+    return chain.find(
+      (block: BlockI): boolean => prop<string, '_hash', BlockI>('_hash', block) === blockHash,
+    );
+  }
+
   public consensus(): Observable<Record<'note', string> & Record<'blockchain', Blockchain>> {
     const registerNodeObservables: Observable<AxiosResponse<Blockchain, AxiosRequestConfig<Blockchain>>>[] = [];
+    const { networkNodes }: { networkNodes: URL[]} = this.blockchain;
+    const { length: networkNodesLength }: { length: number } = networkNodes;
 
-    this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
-      const requestOptions: AxiosRequestConfig<Blockchain> = { responseType: 'json' };
-      const getUrl: URL = new URL('/v1/blockchain', networkNodeUrl);
-      const get$: Observable<AxiosResponse<Blockchain, AxiosRequestConfig<Blockchain>>> =
-          this.httpService.get<Blockchain>(`${getUrl}`, requestOptions);
+    if(networkNodesLength !== 0) {
 
-      registerNodeObservables.push(get$);
-    });
+      networkNodes.forEach((networkNodeUrl: URL): void => {
+        const requestOptions: AxiosRequestConfig<Blockchain> = { responseType: 'json' };
+        const getUrl: URL = new URL('/v1/blockchain', networkNodeUrl);
+        const get$: Observable<AxiosResponse<Blockchain, AxiosRequestConfig<Blockchain>>> =
+            this.httpService.get<Blockchain>(`${getUrl}`, requestOptions);
 
-    return forkJoin<AxiosResponse[]>(registerNodeObservables).pipe(map((responses: AxiosResponse<Blockchain>[]): any => {
-      const { length: currentChainLength }: { length: number } = this.blockchain.chain;
-      let maxChainLength: number = currentChainLength;
-      let newLongestChain: Array<BlockI> = null;
-      let newPendingTransactions: Array<TransactionI> = null;
-
-      responses.forEach((responseBlockchain: AxiosResponse<Blockchain>): void => {
-        //this.logger.log(`> ${responseBlockchain.config.url} > ${responseBlockchain.status} > ${JSON.stringify(responseBlockchain.data)}`);
-        const blockchain: Blockchain = responseBlockchain.data;
-        const chain: Array<BlockI> = prop<Array<BlockI>, '_chain', Blockchain>('_chain', blockchain);
-        const { length: chainLength }: { length: number } = chain;
-
-        if(chainLength > maxChainLength) {
-          newPendingTransactions = prop<TransactionI[], '_pendingTransactions', Blockchain>('_pendingTransactions', blockchain);
-          newLongestChain = chain;
-          maxChainLength = chainLength;
-        }
+        registerNodeObservables.push(get$);
       });
 
-      if(isNil(newLongestChain) || (newLongestChain && not(this.blockchain.blockchainIsValid(newLongestChain)))) {
-        return {
-          note: 'Current chain has not been replaced.',
-          blockchain: this.blockchain
-        }
-      } else {
-        this.blockchain.chain = newLongestChain;
-        this.blockchain.pendingTransactions = newPendingTransactions;
+      return forkJoin<AxiosResponse[]>(registerNodeObservables).pipe(map((responses: AxiosResponse<Blockchain>[]): Record<'note', string> & Record<'blockchain', Blockchain> => {
+        const { length: currentChainLength }: { length: number } = this.blockchain.chain;
+        let maxChainLength: number = currentChainLength;
+        let newLongestChain: Array<BlockI> = null;
+        let newPendingTransactions: Array<TransactionI> = null;
 
-        return {
-          note: 'This chain has been replaced.',
-          blockchain: this.blockchain
+        responses.forEach((responseBlockchain: AxiosResponse<Blockchain>): void => {
+          //this.logger.log(`> ${responseBlockchain.config.url} > ${responseBlockchain.status} > ${JSON.stringify(responseBlockchain.data)}`);
+          const blockchain: Blockchain = responseBlockchain.data;
+          const chain: Array<BlockI> = prop<Array<BlockI>, '_chain', Blockchain>('_chain', blockchain);
+          const { length: chainLength }: { length: number } = chain;
+
+          if(chainLength > maxChainLength) {
+            newPendingTransactions = prop<TransactionI[], '_pendingTransactions', Blockchain>('_pendingTransactions', blockchain);
+            newLongestChain = chain;
+            maxChainLength = chainLength;
+          }
+        });
+
+        if(isNil(newLongestChain) || (newLongestChain && not(this.blockchain.blockchainIsValid(newLongestChain)))) {
+          return {
+            note: 'Current chain has not been replaced.',
+            blockchain: this.blockchain
+          }
+        } else {
+          this.blockchain.chain = newLongestChain;
+          this.blockchain.pendingTransactions = newPendingTransactions;
+
+          return {
+            note: 'This chain has been replaced.',
+            blockchain: this.blockchain
+          }
         }
-      }
-    }));
+      }));
+    } else {
+      return new Observable<Record<'note', string> & Record<'blockchain', Blockchain>>((observer: Subscriber<Record<'note', string> & Record<'blockchain', Blockchain>>): void => {
+        observer.next({
+          note: 'There are no network nodes to reach a consensus.',
+          blockchain: this.blockchain
+        });
+        observer.complete();
+      });
+    }
   }
 
   public blockchainIsValid(blockchain: BlockI[]): boolean {
