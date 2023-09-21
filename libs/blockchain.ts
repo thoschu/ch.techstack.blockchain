@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import {dec, equals, head, inc, last, length, not, prop} from 'ramda';
+import { dec, equals, head, inc, last, length, not, prop } from 'ramda';
 
 import { Block } from '@/block/block.class';
 import { BlockI } from '@/block/block.interface';
@@ -21,7 +21,7 @@ export class Blockchain {
         previousBlockHash: '0000',
         hash: '0'
     } as const;
-    private readonly _chain: BlockI[] = [];
+    private _chain: BlockI[] = [];
     private _pendingTransactions: TransactionI[] = [];
     private readonly _currentNodeUrl: URL;
     private readonly _networkNodes: URL[] = [];
@@ -75,6 +75,9 @@ export class Blockchain {
 
     public get chain(): BlockI[] {
         return this._chain;
+    }
+    public set chain(chain: BlockI[]) {
+        this._chain = chain;
     }
 
     public get pendingTransactions(): TransactionI[] {

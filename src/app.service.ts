@@ -1,16 +1,34 @@
-import { createVerify, createSign, generateKeyPairSync, KeyPairSyncResult, RSAKeyPairOptions, randomUUID, Sign, Verify } from 'node:crypto';
+import {
+  createSign,
+  createVerify,
+  generateKeyPairSync,
+  KeyPairSyncResult,
+  randomUUID,
+  RSAKeyPairOptions,
+  Sign,
+  Verify,
+} from 'node:crypto';
 import { HttpService } from '@nestjs/axios';
-import { HttpException, Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import {
+  HttpException,
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { Blockchain, CurrentBlockData } from '@/blockchain';
 import { BlockI } from '@/block/block.interface';
 import { TransactionI } from '@/transaction/transaction.interface';
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { and, equals, inc, isEmpty, not} from 'ramda';
-import { catchError, forkJoin, lastValueFrom, noop, Observable, of, Subscription, tap, using } from 'rxjs';
-import { assign, createMachine, interpret, Interpreter, StateMachine } from 'xstate';
-import { TransactionData } from "@/transaction/transaction.class";
+import { and, equals, inc, isEmpty, isNil, not, or, prop } from 'ramda';
+import { forkJoin, map, Observable, Subscription } from 'rxjs';
+import { createMachine } from 'xstate';
 
-export enum ResponseStatusRange { ok = 1, warn = 2 , failure = 3 };
+export enum ResponseStatusRange {
+  ok = 1,
+  warn = 2,
+  failure = 3,
+};
 export type Identity = Record<'primaryPid' | 'workerPid' | 'worker', number> & Record<'url', URL> & Partial<Record<'uuid', string>>;
 export type MineResponse = Record<'note', string> & Record<'block', BlockI>  & Record<'identity', Identity>;
 export type MinePayload = { nonce: number, previousBlockHash: string, hash: string };
@@ -68,6 +86,54 @@ export class AppService implements OnModuleDestroy {
 
   onModuleDestroy(): void {
     this.subscriptions.forEach((subscription: Subscription): void => subscription.unsubscribe())
+  }
+
+  public consensus(): Observable<Record<'note', string> & Record<'blockchain', Blockchain>> {
+    const registerNodeObservables: Observable<AxiosResponse<Blockchain, AxiosRequestConfig<Blockchain>>>[] = [];
+
+    this.blockchain.networkNodes.forEach((networkNodeUrl: URL): void => {
+      const requestOptions: AxiosRequestConfig<Blockchain> = { responseType: 'json' };
+      const getUrl: URL = new URL('/v1/blockchain', networkNodeUrl);
+      const get$: Observable<AxiosResponse<Blockchain, AxiosRequestConfig<Blockchain>>> =
+          this.httpService.get<Blockchain>(`${getUrl}`, requestOptions);
+
+      registerNodeObservables.push(get$);
+    });
+
+    return forkJoin<AxiosResponse[]>(registerNodeObservables).pipe(map((responses: AxiosResponse<Blockchain>[]): any => {
+      const { length: currentChainLength }: { length: number } = this.blockchain.chain;
+      let maxChainLength: number = currentChainLength;
+      let newLongestChain: Array<BlockI> = null;
+      let newPendingTransactions: Array<TransactionI> = null;
+
+      responses.forEach((responseBlockchain: AxiosResponse<Blockchain>): void => {
+        //this.logger.log(`> ${responseBlockchain.config.url} > ${responseBlockchain.status} > ${JSON.stringify(responseBlockchain.data)}`);
+        const blockchain: Blockchain = responseBlockchain.data;
+        const chain: Array<BlockI> = prop<Array<BlockI>, '_chain', Blockchain>('_chain', blockchain);
+        const { length: chainLength }: { length: number } = chain;
+
+        if(chainLength > maxChainLength) {
+          newPendingTransactions = prop<TransactionI[], '_pendingTransactions', Blockchain>('_pendingTransactions', blockchain);
+          newLongestChain = chain;
+          maxChainLength = chainLength;
+        }
+      });
+
+      if(isNil(newLongestChain) || (newLongestChain && not(this.blockchain.blockchainIsValid(newLongestChain)))) {
+        return {
+          note: 'Current chain has not been replaced.',
+          blockchain: this.blockchain
+        }
+      } else {
+        this.blockchain.chain = newLongestChain;
+        this.blockchain.pendingTransactions = newPendingTransactions;
+
+        return {
+          note: 'This chain has been replaced.',
+          blockchain: this.blockchain
+        }
+      }
+    }));
   }
 
   public blockchainIsValid(blockchain: BlockI[]): boolean {
