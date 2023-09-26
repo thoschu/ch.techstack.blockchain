@@ -20,9 +20,10 @@ import { Blockchain, CurrentBlockData } from '@/blockchain';
 import { BlockI } from '@/block/block.interface';
 import { TransactionI } from '@/transaction/transaction.interface';
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { and, equals, inc, isEmpty, isNil, not, prop } from 'ramda';
-import { forkJoin, map, Observable, Subscriber, Subscription } from 'rxjs';
+import {and, compose, equals, inc, includes, isEmpty, isNil, not, prop} from 'ramda';
+import {find, forkJoin, map, Observable, Subscriber, Subscription} from 'rxjs';
 import { createMachine } from 'xstate';
+import cjsExport from "@typescript-eslint/eslint-plugin";
 
 export enum ResponseStatusRange {
   ok = 1,
@@ -49,6 +50,18 @@ export enum RoutesEnum {
 
 @Injectable()
 export class AppService implements OnModuleDestroy {
+  private readonly generateKeyPairSyncOptions: RSAKeyPairOptions<'pem', 'pem'> = {
+    modulusLength: 4096,
+    publicKeyEncoding: {
+      type: 'spki',
+      format: 'pem',
+    },
+    privateKeyEncoding: {
+      type: 'pkcs8',
+      format: 'pem',
+    }
+  };
+  private keys: KeyPairSyncResult<string, string> = generateKeyPairSync('rsa', this.generateKeyPairSyncOptions);
   private readonly urlRegExp: RegExp = /^(https?:\/\/)?([\w.-]+)\.([a-z]{2,})(:\d{1,5})?([/?:].*)?$/i;
   private readonly blockchain: Blockchain;
   private readonly logger: Logger = new Logger(AppService.name);
@@ -88,23 +101,69 @@ export class AppService implements OnModuleDestroy {
     this.subscriptions.forEach((subscription: Subscription): void => subscription.unsubscribe())
   }
 
-  public getTransactionById(transactionId: string): any {
-    const transactions: TransactionI[] = this.blockchain.pendingTransactions;
+  public getAddressData(address: string): TransactionI[] {
+    const chain: BlockI[] = this.blockchain.chain;
+    const addressTransactions: TransactionI[] = [];
 
+    chain.forEach((currentBlock: BlockI): void => {
+      const transactions: TransactionI[] = prop<TransactionI[], '_transactions', BlockI>('_transactions', currentBlock);
+
+      transactions.forEach((transaction: TransactionI): void => {
+        const sender: string = prop<string, '_sender', TransactionI>('_sender', transaction);
+        const recipient: string = prop<string, '_recipient', TransactionI>('_recipient', transaction);
+
+        if(sender === address || recipient === address) {
+          addressTransactions.push(transaction);
+        }
+      });
+    });
+
+    return addressTransactions;
   }
 
-  public getBlockByBlockHash(blockHash: string): BlockI | {} {
+  public getTransactionById2(transactionId: string): any {
     const chain: BlockI[] = this.blockchain.chain;
+
+    let result = null;
+
+    chain.some((block: BlockI): boolean => {
+      return block.transactions.some((transaction: TransactionI): boolean => {
+        if(transaction.id === transactionId) {
+          result = { transaction, block };
+
+          return true; // Abbruch, da das Element gefunden wurde
+        }
+
+        return false;
+      });
+    });
+
+    return result;
+  }
+
+  public getTransactionById(transactionId: string): { transactionIndex: number, block: BlockI } | null {
+    const chain: BlockI[] = this.blockchain.chain;
+    let transactionIndex: number = null;
+    let block: BlockI = null;
+
+    chain.forEach((currentBlock: BlockI): void => {
+      currentBlock.transactions.forEach((transaction: TransactionI, idx: number): void => {
+        if(transaction.id === transactionId) {
+          transactionIndex = idx;
+          block = currentBlock;
+        }
+      });
+    });
+
+   return transactionIndex && block ? { transactionIndex, block } : null;
+  }
+
+  public getBlockByBlockHash(blockHash: string): BlockI | null {
+    const chain: BlockI[] = this.blockchain.chain;
+
     return chain.find(
       (block: BlockI): boolean => prop<string, '_hash', BlockI>('_hash', block) === blockHash,
-    ) ?? {
-      "_index": null,
-      "_timestamp": null,
-      "_transactions": null,
-      "_nonce": null,
-      "_previousBlockHash": null,
-      "_hash": null
-    };
+    ) ?? null;
   }
 
   public consensus(): Observable<Record<'note', string> & Record<'blockchain', Blockchain>> {
@@ -408,21 +467,10 @@ export class AppService implements OnModuleDestroy {
     });
   }
 
-  private signBlock(block: BlockI): BlockSignature {
-    const options: RSAKeyPairOptions<'pem', 'pem'> = {
-      modulusLength: 4096,
-      publicKeyEncoding: {
-        type: 'spki',
-        format: 'pem',
-      },
-      privateKeyEncoding: {
-        type: 'pkcs8',
-        format: 'pem',
-      }
-    };
-    const { privateKey, publicKey }: KeyPairSyncResult<string, string> = generateKeyPairSync('rsa', options);
+  public signBlock(block: BlockI | {}): BlockSignature {
     const dataToSignString: string = JSON.stringify(block);
     const sign: Sign = createSign('RSA-SHA256').update(dataToSignString).end();
+    const { privateKey, publicKey }: KeyPairSyncResult<string, string> = this.keys;
     const signature: string = sign.sign(privateKey, 'hex');
 
     return {

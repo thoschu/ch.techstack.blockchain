@@ -19,7 +19,7 @@ import { Blockchain } from '@/blockchain';
 import { Transaction, TransactionData } from '@/transaction/transaction.class';
 
 import {
-  AppService,
+  AppService, BlockSignature,
   ChainActionStatusRange,
   MineResponse,
   PendingTransactionPayload,
@@ -49,18 +49,45 @@ export class AppV1Controller {
 
   @Get('/block/:blockHash')
   @Header('Cache-Control', 'none')
-  public blockHash(@Param('blockHash') blockHash: string): BlockI | {} {
+  public blockHash(@Param('blockHash') blockHash: string): {} {
     //this.logger.log(`> /block/:blockHash :: ${process.pid}`);
+    const time: number = Date.now();
+    const block: BlockI | null = this.appService.getBlockByBlockHash(blockHash);
+    const blockSignature: BlockSignature = block ? this.appService.signBlock(block) : null;
+    const { url: node }: { url: URL } = this.appService.identity;
 
-    return this.appService.getBlockByBlockHash(blockHash);
+    return {
+      time,
+      node,
+      block ,
+      blockSignature
+    };
   }
 
   @Get('/transaction/:transactionId')
   @Header('Cache-Control', 'none')
   public transactionId(@Param('transactionId') transactionId: string): any {
     //this.logger.log(`> /block/:blockHash :: ${process.pid}`);
+    const transactionIdResult: {transactionIndex: number, block: BlockI} | null =
+        this.appService.getTransactionById(transactionId);
 
-    return transactionId;
+    if(transactionIdResult) {
+      const { transactionIndex, block }: { transactionIndex: number, block: BlockI } = transactionIdResult;
+
+      return {
+        time: Date.now(),
+        node: this.appService.identity.url,
+        transactionIndex,
+        block
+      };
+    } else {
+      return {
+        time: Date.now(),
+        node: this.appService.identity.url,
+        transactionIndex: null,
+        block: null
+      };
+    }
   }
 
   @Get('/address/:address')
@@ -68,7 +95,13 @@ export class AppV1Controller {
   public address(@Param('address') address: string): any {
     //this.logger.log(`> /block/:blockHash :: ${process.pid}`);
 
-    return address;
+    const addressData: TransactionI[] = this.appService.getAddressData(address);
+
+    return {
+      time: Date.now(),
+      node: this.appService.identity.url,
+      addressData
+    };
   }
 
   @Post('/blockchainIsValid')

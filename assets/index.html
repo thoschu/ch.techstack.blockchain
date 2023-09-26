@@ -3,9 +3,9 @@
 
 <head>
 	<title>Block Explorer</title>
-	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
-	<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+	<script src="//code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+	<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 </head>
 
@@ -49,27 +49,27 @@
 					<tbody>
 						<tr>	
 							<td class="bold">Block Hash</td>
-							<td>{{ block.hash }}</td>
+							<td>{{ block._hash }}</td>
 						</tr>
 						<tr>	
 							<td class="bold">Index</td>
-							<td>{{ block.index }}</td>
+							<td>{{ block._index }}</td>
 						</tr>
 						<tr>	
 							<td class="bold">Time Stamp</td>
-							<td>{{ block.timestamp }}</td>
+							<td>{{ block._timestamp }}</td>
 						</tr>
 						<tr>	
 							<td class="bold">Nonce</td>
-							<td>{{ block.nonce }}</td>
+							<td>{{ block._nonce }}</td>
 						</tr>
 						<tr>	
 							<td class="bold">Previous Hash</td>
-							<td>{{ block.previousBlockHash }}</td>
+							<td>{{ block._previousBlockHash }}</td>
 						</tr>
 						<tr>	
 							<td class="bold">Number Transactions</td>
-							<td>{{ block.transactions.length }}</td>
+							<td>{{ block._transactions.length }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -81,15 +81,15 @@
 					<tbody>
 						<tr>	
 							<td class="bold">Sender</td>
-							<td>{{ transaction.sender }}</td>
+							<td>{{ transaction._sender }}</td>
 						</tr>
 						<tr>	
 							<td class="bold">Recipient</td>
-							<td>{{ transaction.recipient }}</td>
+							<td>{{ transaction._recipient }}</td>
 						</tr>
 						<tr>	
 							<td class="bold">Amount</td>
-							<td>{{ transaction.amount }}</td>
+							<td>{{ transaction._value }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -103,14 +103,14 @@
 						<tr>
 							<th scope="col">Sender</th>
 							<th scope="col">Recipient</th>
-							<th scope="col">Amount</th>
+							<th scope="col">Value</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr ng-repeat="transaction in addressData.addressTransactions">
-							<td>{{ transaction.sender }}</td>
-							<td>{{ transaction.recipient }}</td>
-							<td>{{ transaction.amount }}</td>
+						<tr ng-repeat="transaction in addressData">
+							<td>{{ transaction._sender }}</td>
+							<td>{{ transaction._recipient }}</td>
+							<td>{{ transaction._value }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -130,7 +130,7 @@
 			$scope.initialSearchMade = false;
 
 			$scope.fetchBlock = function(blockHash) {
-				$http.get(`/block/${blockHash}`)
+				$http.get(`/v1/block/${blockHash}`)
 				.then(response => {
 					$scope.block = response.data.block;
 					$scope.transaction = null;
@@ -139,22 +139,26 @@
 			};
 
 			$scope.fetchTransaction = function(transactionId) {
-				$http.get(`/transaction/${transactionId}`)
+				$http.get(`/v1/transaction/${transactionId}`)
 				.then(response => {
 					$scope.transaction = response.data.transaction;
 					$scope.block = null;
 					$scope.addressData = null;
+
 				});				
 			};
 
 			$scope.fetchAddressData = function(address) {
-				$http.get(`/address/${address}`)
+				$http.get(`/v1/address/${address}`)
 				.then(response => {
 					$scope.addressData = response.data.addressData;
-					if (!$scope.addressData.addressTransactions.length) $scope
-						.addressData = null;
+
+					if (!$scope.addressData.length) $scope.addressData = null;
+
 					$scope.block = null;
 					$scope.transaction = null;
+
+					console.log($scope.addressData);
 				});				
 			};
 
@@ -173,7 +177,7 @@
 
 		});
 	</script>
-
+	<!--
 	<style type="text/css" contenteditable style="display: block; white-space: pre;">
 		html, body {
 			min-height: 100vh;
@@ -215,7 +219,7 @@
 			text-align: center;
 		}
 	</style>
-
+	-->
 
 </body>
 
