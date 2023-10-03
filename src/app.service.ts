@@ -147,8 +147,16 @@ export class AppService implements OnModuleDestroy {
     let block: BlockI = null;
 
     chain.forEach((currentBlock: BlockI): void => {
-      currentBlock.transactions.forEach((transaction: TransactionI, idx: number): void => {
-        if(transaction.id === transactionId) {
+      const transactions: TransactionI[] = prop<TransactionI[], '_transactions', BlockI>('_transactions', currentBlock);
+
+      console.log(transactions);
+
+      transactions.forEach((transaction: TransactionI, idx: number): void => {
+        const id: string = prop<string, '_id', TransactionI>('_id', transaction);
+
+        console.log(id);
+
+        if(id === transactionId) {
           transactionIndex = idx;
           block = currentBlock;
         }

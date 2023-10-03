@@ -68,24 +68,25 @@ export class AppV1Controller {
   @Header('Cache-Control', 'none')
   public transactionId(@Param('transactionId') transactionId: string): any {
     //this.logger.log(`> /block/:blockHash :: ${process.pid}`);
-    const transactionIdResult: {transactionIndex: number, block: BlockI} | null =
+    console.log(transactionId);
+    const transactionIdResult: { transactionIndex: number, block: BlockI } | null =
         this.appService.getTransactionById(transactionId);
 
     if(transactionIdResult) {
       const { transactionIndex, block }: { transactionIndex: number, block: BlockI } = transactionIdResult;
+      const transactions: TransactionI[] = prop<TransactionI[], '_transactions', BlockI>('_transactions', block);
+      const transaction: TransactionI = transactions[transactionIndex];
 
       return {
         time: Date.now(),
         node: this.appService.identity.url,
-        transactionIndex,
-        block
+        transaction
       };
     } else {
       return {
         time: Date.now(),
         node: this.appService.identity.url,
-        transactionIndex: null,
-        block: null
+        transaction: null
       };
     }
   }
