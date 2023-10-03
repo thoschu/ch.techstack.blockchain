@@ -1,226 +1,217 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-	<title>Block Explorer</title>
-	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
-	<script src="//code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-	<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-</head>
-
-<body ng-app="BlockExplorer">
-	<div class="container" ng-controller="MainController">
-		<div class="row">
-			<div class="col-md-8 offset-md-2">
-				<h1 id="page-title">Block Explorer</h1>
+	<head>
+		<title>Explorer</title>
+		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+		<script src="//code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+		<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+		<script src="//cdn.jsdelivr.net/npm/jquery.json-viewer@1.5.0/json-viewer/jquery.json-viewer.min.js"></script>
+		<link href="//cdn.jsdelivr.net/npm/jquery.json-viewer@1.5.0/json-viewer/jquery.json-viewer.min.css" rel="stylesheet">
+		<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+		<link href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAA7AAAAOwBeShxvQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAMiSURBVFiFzddPiNVVFAfwjzPNjGVDDkNGFhQUUoZELkJqIxG1atciCKpFZX9QI6OSoFpFRpv+LWpXGVFGJGEhUW4igqJFYFmWg4olVs4IQ9OQzq/FPb/ufW/e+83TGbMDl3fv797vPefee873nMcZlv554ldgBEcXwJaeZRFuxIeYifYJbjndipfgAexBFW0M+4vxV7gNZy2k4uV4Gn8Uir7GHaGoTzr9l8X8L4FZOl/lN+Hv2PQvvI7VDetvwA7pWSqMY02Tgr45DFgtX2d/bDrZsH4PvsNUjJdi7Rw6GuXxULoLv0X/ON7CymLd5XhVuqUKf+Kb6G9eCAPuw7l4BIfj2wlsw9thVIUJPIMLsG6hDahlCPfioOx0RySnGynW9WTAqYTLNF6THLJ+lkvkdz8pmU+8TkvPUJ2qcuaOgtMuTQb0SSQEF0kU3KsswsXRv/AksYYkltstO1mFH7ARZxdrx7UmosHAftuG/TGwi5sUL5dC6PcCuAsb8EXx7TCexPmFAcvwlByiVWA24PPi20FswnCp+Cq8ITlVFb9vmk25a/CuHPNT0T8e/Uqi7XfMpt/r8YHstOMyXzhaWPie/O7d5FJ8rPWKK3wkhWOTXIHtBeaAtk1OSHm+W8K5WrqFGbMNqKS64NoGw1+QaLrEqHAID0tptAoF7+OaAF8XJ6xB+6Xa4Fi0B7XWBTvkZ1iFrXJWPYYtsr/8W1iQPHy9TLMz+L7Y+GfcLXk7rVEwiHuwr1i/u7itI3hCrhHGOhlQy5DE//Wp9uJOs5mzPQxhAHfhJ/md1+OctnWNBtSyOebXdZnvZEAt9wf20S7zY6j+11T8nxowilv1/j9hALdL77ok+gM9YvtD12htwGcSNW6TnO0hbVRZyAgekzx9q+T5g9HfF3MjXbDDsffe0DWMT0mZ6mbslENmAs/jlRhvwUtSQVoT1nap4Fwb/ZpmJ/Eynovxi7HXhBzaO0PnrCy5Qme2qtuUlDeu7HDCywI72QU7HdhVXW6oRZZJ13kowL9KNd9oD9jzpNR7QCagZ82dYzrKYomGe3WwUgYD21gDnHH5B+2IG3AzTIlbAAAAAElFTkSuQmCC" rel="icon" type="image/png">
+	</head>
+	<body ng-app="BlockExplorer">
+		<div class="container" ng-controller="MainController">
+			<div class="row">
+				<div class="col-md-8 offset-md-2">
+					<h1 id="page-title">Block Explorer</h1>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6 offset-md-3">
+					<form ng-submit="search(searchValue)">
+						<div class="form-group">
+							<input type="text" class="form-control" ng-model="searchValue">
+						</div>
+						<div class="form-group">
+							<select class="form-control" ng-model="searchType">
+								<option value="block">Block Hash</option>
+								<option value="transaction">Transaction ID</option>
+								<option value="address">Address</option>
+							</select>
+						</div>
+						<button
+							type="submit"
+							class="btn btn-primary margin-auto btn-search">
+								Search
+						</button>
+						<p ng-if="!block && !transaction && !addressData && initialSearchMade" class="no-data-text">
+							No data found for search.
+						</p>
+					</form>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-10 offset-md-1">
+					<h3 class="table-title" ng-if="block">Block</h3>
+					<table class="table table-striped" ng-if="block">
+						<tbody>
+							<tr>
+								<td class="bold">Block Hash</td>
+								<td>{{ block._hash }}</td>
+							</tr>
+							<tr>
+								<td class="bold">Index</td>
+								<td>{{ block._index }}</td>
+							</tr>
+							<tr>
+								<td class="bold">Time Stamp</td>
+								<td>{{ block._timestamp }}</td>
+							</tr>
+							<tr>
+								<td class="bold">Nonce</td>
+								<td>{{ block._nonce }}</td>
+							</tr>
+							<tr>
+								<td class="bold">Previous Hash</td>
+								<td>{{ block._previousBlockHash }}</td>
+							</tr>
+							<tr>
+								<td class="bold">Number Transactions</td>
+								<td>{{ block._transactions.length }}</td>
+							</tr>
+						</tbody>
+					</table>
+					<h3 class="table-title" ng-if="transaction">Transaction</h3>
+					<table class="table table-striped" ng-if="transaction">
+						<tbody>
+							<tr>
+								<td class="bold">Sender</td>
+								<td>{{ transaction._sender }}</td>
+							</tr>
+							<tr>
+								<td class="bold">Recipient</td>
+								<td>{{ transaction._recipient }}</td>
+							</tr>
+							<tr>
+								<td class="bold">Amount</td>
+								<td>{{ transaction._value }}</td>
+							</tr>
+						</tbody>
+					</table>
+					<h3 class="table-title" ng-if="addressData">Address</h3>
+					<p id="balance-text" ng-if="addressData">(Balance: {{ addressData.addressBalance }})</p>
+					<table class="table table-striped" ng-if="addressData">
+						<thead>
+							<tr>
+								<th scope="col">Sender</th>
+								<th scope="col">Recipient</th>
+								<th scope="col">Value</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="transaction in addressData">
+								<td>{{ transaction._sender }}</td>
+								<td>{{ transaction._recipient }}</td>
+								<td>{{ transaction._value }}</td>
+							</tr>
+						</tbody>
+					</table>
+					<hr>
+					<pre id="json-renderer"></pre>
+				</div>
 			</div>
 		</div>
-		<div class="row">
-			<div class="col-md-6 offset-md-3">
-				<form ng-submit="search(searchValue)">
-					<div class="form-group">
-						<input type="text" class="form-control" ng-model="searchValue">
-					</div>
-					<div class="form-group">
-						<select class="form-control" ng-model="searchType">
-							<option value="block">Block Hash</option>
-							<option value="transaction">Transaction ID</option>
-							<option value="address">Address</option>
-						</select>
-					</div>
-					<button
-						type="submit"
-						class="btn btn-primary margin-auto btn-search">
-							Search
-					</button>
-					<p ng-if="!block && !transaction && !addressData && initialSearchMade" class="no-data-text">
-						No data found for search.
-					</p>
-				</form>
-			</div>
-		</div>
-		<div class="row">
-			<div class="col-md-10 offset-md-1">
+		<script>
+			window.app = angular.module('BlockExplorer', []);
 
-				<!-- 'display block' table -->
-				<h3 class="table-title" ng-if="block">Block</h3>
-				<table class="table table-striped" ng-if="block">
-					<tbody>
-						<tr>	
-							<td class="bold">Block Hash</td>
-							<td>{{ block._hash }}</td>
-						</tr>
-						<tr>	
-							<td class="bold">Index</td>
-							<td>{{ block._index }}</td>
-						</tr>
-						<tr>	
-							<td class="bold">Time Stamp</td>
-							<td>{{ block._timestamp }}</td>
-						</tr>
-						<tr>	
-							<td class="bold">Nonce</td>
-							<td>{{ block._nonce }}</td>
-						</tr>
-						<tr>	
-							<td class="bold">Previous Hash</td>
-							<td>{{ block._previousBlockHash }}</td>
-						</tr>
-						<tr>	
-							<td class="bold">Number Transactions</td>
-							<td>{{ block._transactions.length }}</td>
-						</tr>
-					</tbody>
-				</table>
-				<!-- end 'display block' table -->
+			app.controller('MainController', function($scope, $http) {
+				$scope.block = null;
+				$scope.transaction = null;
+				$scope.addressData = null;
+				$scope.initialSearchMade = false;
 
-				<!-- 'display transaction' table -->
-				<h3 class="table-title" ng-if="transaction">Transaction</h3>
-				<table class="table table-striped" ng-if="transaction">
-					<tbody>
-						<tr>	
-							<td class="bold">Sender</td>
-							<td>{{ transaction._sender }}</td>
-						</tr>
-						<tr>	
-							<td class="bold">Recipient</td>
-							<td>{{ transaction._recipient }}</td>
-						</tr>
-						<tr>	
-							<td class="bold">Amount</td>
-							<td>{{ transaction._value }}</td>
-						</tr>
-					</tbody>
-				</table>
-				<!-- end 'display transaction' table -->
+				$scope.fetchBlock = function(blockHash) {
+					$http.get(`/v1/block/${blockHash}`)
+					.then(response => {
+						$scope.block = response.data.block;
+						$scope.transaction = null;
+						$scope.addressData = null;
 
-				<!-- 'display address' table -->
-				<h3 class="table-title" ng-if="addressData">Address</h3>
-				<p id="balance-text" ng-if="addressData">(Balance: {{ addressData.addressBalance }})</p>
-				<table class="table table-striped" ng-if="addressData">
-					<thead>
-						<tr>
-							<th scope="col">Sender</th>
-							<th scope="col">Recipient</th>
-							<th scope="col">Value</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr ng-repeat="transaction in addressData">
-							<td>{{ transaction._sender }}</td>
-							<td>{{ transaction._recipient }}</td>
-							<td>{{ transaction._value }}</td>
-						</tr>
-					</tbody>
-				</table>
-				<!-- end 'display address' table -->
+						//$('#json-renderer').jsonViewer($scope.block);
+					});
+				};
 
-			</div>
-		</div>
-	</div>
+				$scope.fetchTransaction = function(transactionId) {
+					$http.get(`/v1/transaction/${transactionId}`)
+					.then(response => {
+						$scope.transaction = response.data.transaction;
+						$scope.block = null;
+						$scope.addressData = null;
 
-	<script>
-		window.app = angular.module('BlockExplorer', []);
+						// $('#json-renderer').jsonViewer($scope.transaction);
+					});
+				};
 
-		app.controller('MainController', function($scope, $http) {
-			$scope.block = null;
-			$scope.transaction = null;
-			$scope.addressData = null;
-			$scope.initialSearchMade = false;
+				$scope.fetchAddressData = function(address) {
+					$http.get(`/v1/address/${address}`)
+					.then(response => {
+						$scope.addressData = response.data.addressData;
 
-			$scope.fetchBlock = function(blockHash) {
-				$http.get(`/v1/block/${blockHash}`)
-				.then(response => {
-					$scope.block = response.data.block;
-					$scope.transaction = null;
-					$scope.addressData = null;
-				});
-			};
+						if (!$scope.addressData.length) $scope.addressData = null;
 
-			$scope.fetchTransaction = function(transactionId) {
-				$http.get(`/v1/transaction/${transactionId}`)
-				.then(response => {
-					$scope.transaction = response.data.transaction;
-					$scope.block = null;
-					$scope.addressData = null;
+						$scope.block = null;
+						$scope.transaction = null;
 
-				});				
-			};
+						$('#json-renderer').jsonViewer($scope.addressData);
+					});
+				};
 
-			$scope.fetchAddressData = function(address) {
-				$http.get(`/v1/address/${address}`)
-				.then(response => {
-					$scope.addressData = response.data.addressData;
-
-					if (!$scope.addressData.length) $scope.addressData = null;
-
-					$scope.block = null;
-					$scope.transaction = null;
-
-					console.log($scope.addressData);
-				});				
-			};
-
-			$scope.search = function(searchValue) {
-				$scope.initialSearchMade = true;
-				if ($scope.searchType === 'block') {
-					$scope.fetchBlock(searchValue);
-				}
-				else if ($scope.searchType === 'transaction') {
-					$scope.fetchTransaction(searchValue);
-				}
-				else if ($scope.searchType === 'address') {
-					$scope.fetchAddressData(searchValue);
-				}
-			};
-
-		});
-	</script>
-	<!--
-	<style type="text/css" contenteditable style="display: block; white-space: pre;">
-		html, body {
-			min-height: 100vh;
-			background-color: #e8e8e8;
-		}
-		.container {
-			padding-top: 50px;
-			padding-bottom: 50px;
-		}
-		#page-title {
-			text-align: center;
-			margin-bottom: 40px;
-		}
-		.table-title {
-			margin-bottom: 20px;
-			text-align: center;
-		}
-		.table {
-			background-color: #ffffff;
-			box-shadow: 2px 2px 15px -3px rgba(0,0,0,0.75);
-		}
-		#balance-text {
-			text-align: center;
-			margin-top: -20px;
-			margin-bottom: 30px;
-		}
-		.margin-auto {
-			margin: auto;
-			display: block;
-		}
-		.btn-search {
-			margin-bottom: 50px;
-		}
-		.bold {
-			font-weight: 700;
-		}
-		.no-data-text {
-			color: red;
-			text-align: center;
-		}
-	</style>
-	-->
-
-</body>
-
+				$scope.search = function(searchValue) {
+					$scope.initialSearchMade = true;
+					if ($scope.searchType === 'block') {
+						$scope.fetchBlock(searchValue);
+					}
+					else if ($scope.searchType === 'transaction') {
+						$scope.fetchTransaction(searchValue);
+					}
+					else if ($scope.searchType === 'address') {
+						$scope.fetchAddressData(searchValue);
+					}
+				};
+			});
+		</script>
+		<!--<style type="text/css" contenteditable style="display: block; white-space: pre;">-->
+		<style>
+			html, body {
+				min-height: 100vh;
+				background-color: #e8e8e8;
+			}
+			.container {
+				padding-top: 50px;
+				padding-bottom: 50px;
+			}
+			#page-title {
+				text-align: center;
+				margin-bottom: 40px;
+			}
+			.table-title {
+				margin-bottom: 20px;
+				text-align: center;
+			}
+			.table {
+				background-color: #ffffff;
+				box-shadow: 2px 2px 15px -3px rgba(0,0,0,0.75);
+			}
+			#balance-text {
+				text-align: center;
+				margin-top: -20px;
+				margin-bottom: 30px;
+			}
+			.margin-auto {
+				margin: auto;
+				display: block;
+			}
+			.btn-search {
+				margin-bottom: 50px;
+			}
+			.bold {
+				font-weight: 700;
+			}
+			.no-data-text {
+				color: red;
+				text-align: center;
+			}
+		</style>
+	</body>
 </html>
