@@ -9,6 +9,7 @@
 		<link href="//cdn.jsdelivr.net/npm/jquery.json-viewer@1.5.0/json-viewer/jquery.json-viewer.min.css" rel="stylesheet">
 		<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
 		<link href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAA7AAAAOwBeShxvQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAMiSURBVFiFzddPiNVVFAfwjzPNjGVDDkNGFhQUUoZELkJqIxG1atciCKpFZX9QI6OSoFpFRpv+LWpXGVFGJGEhUW4igqJFYFmWg4olVs4IQ9OQzq/FPb/ufW/e+83TGbMDl3fv797vPefee873nMcZlv554ldgBEcXwJaeZRFuxIeYifYJbjndipfgAexBFW0M+4vxV7gNZy2k4uV4Gn8Uir7GHaGoTzr9l8X8L4FZOl/lN+Hv2PQvvI7VDetvwA7pWSqMY02Tgr45DFgtX2d/bDrZsH4PvsNUjJdi7Rw6GuXxULoLv0X/ON7CymLd5XhVuqUKf+Kb6G9eCAPuw7l4BIfj2wlsw9thVIUJPIMLsG6hDahlCPfioOx0RySnGynW9WTAqYTLNF6THLJ+lkvkdz8pmU+8TkvPUJ2qcuaOgtMuTQb0SSQEF0kU3KsswsXRv/AksYYkltstO1mFH7ARZxdrx7UmosHAftuG/TGwi5sUL5dC6PcCuAsb8EXx7TCexPmFAcvwlByiVWA24PPi20FswnCp+Cq8ITlVFb9vmk25a/CuHPNT0T8e/Uqi7XfMpt/r8YHstOMyXzhaWPie/O7d5FJ8rPWKK3wkhWOTXIHtBeaAtk1OSHm+W8K5WrqFGbMNqKS64NoGw1+QaLrEqHAID0tptAoF7+OaAF8XJ6xB+6Xa4Fi0B7XWBTvkZ1iFrXJWPYYtsr/8W1iQPHy9TLMz+L7Y+GfcLXk7rVEwiHuwr1i/u7itI3hCrhHGOhlQy5DE//Wp9uJOs5mzPQxhAHfhJ/md1+OctnWNBtSyOebXdZnvZEAt9wf20S7zY6j+11T8nxowilv1/j9hALdL77ok+gM9YvtD12htwGcSNW6TnO0hbVRZyAgekzx9q+T5g9HfF3MjXbDDsffe0DWMT0mZ6mbslENmAs/jlRhvwUtSQVoT1nap4Fwb/ZpmJ/Eynovxi7HXhBzaO0PnrCy5Qme2qtuUlDeu7HDCywI72QU7HdhVXW6oRZZJ13kowL9KNd9oD9jzpNR7QCagZ82dYzrKYomGe3WwUgYD21gDnHH5B+2IG3AzTIlbAAAAAElFTkSuQmCC" rel="icon" type="image/png">
+		<link href="//cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
 	</head>
 	<body ng-app="BlockExplorer">
 		<div class="container" ng-controller="MainController">
@@ -30,19 +31,22 @@
 								<option value="address">Address</option>
 							</select>
 						</div>
-						<button
-							type="submit"
-							class="btn btn-primary margin-auto btn-search">
-								Search
-						</button>
+						<button type="submit" class="btn btn-primary margin-auto btn-search">Search</button>
 						<p ng-if="!block && !transaction && !addressData && initialSearchMade" class="no-data-text">
 							No data found for search.
 						</p>
 					</form>
 				</div>
 			</div>
-			<div class="row">
-				<div class="col-md-10 offset-md-1">
+			<div class="row" style="display: grid;">
+				<label class="switch">
+					<input type="checkbox" checked ng-click="toggle($event)">
+					<span class="slider round"></span>
+				</label>
+			</div>
+			<hr>
+			<div class="row" ng-if="!toggled">
+				<div class="col-md-10 offset-md-1 animate__animated animate__fadeInUp">
 					<h3 class="table-title" ng-if="block">Block</h3>
 					<table class="table table-striped" ng-if="block">
 						<tbody>
@@ -107,9 +111,10 @@
 							</tr>
 						</tbody>
 					</table>
-					<hr>
-					<pre id="json-renderer"></pre>
 				</div>
+			</div>
+			<div class="row" ng-if="toggled">
+				<pre id="json-renderer" class="animate__animated animate__fadeInUp"></pre>
 			</div>
 		</div>
 		<script>
@@ -120,6 +125,7 @@
 				$scope.transaction = null;
 				$scope.addressData = null;
 				$scope.initialSearchMade = false;
+				$scope.toggled = true;
 
 				$scope.fetchBlock = function(blockHash) {
 					$http.get(`/v1/block/${blockHash}`)
@@ -169,6 +175,26 @@
 						$scope.fetchAddressData(searchValue);
 					}
 				};
+
+				$scope.toggle = function(foo) {
+					console.log(foo);
+					console.log('############');
+					$scope.toggled = !$scope.toggled;
+					setTimeout(() => {
+						if($scope.transaction) {
+							console.log($scope.transaction);
+							$('#json-renderer').jsonViewer($scope.transaction);
+						} else if($scope.block) {
+							console.log($scope.block);
+							$('#json-renderer').jsonViewer($scope.block);
+						} else {
+							console.log($scope.addressData);
+							$('#json-renderer').jsonViewer($scope.addressData);
+						}
+
+					});
+
+				};
 			});
 		</script>
 		<!--<style type="text/css" contenteditable style="display: block; white-space: pre;">-->
@@ -177,40 +203,109 @@
 				min-height: 100vh;
 				background-color: #e8e8e8;
 			}
+
 			.container {
 				padding-top: 50px;
 				padding-bottom: 50px;
 			}
+
 			#page-title {
 				text-align: center;
 				margin-bottom: 40px;
 			}
+
 			.table-title {
 				margin-bottom: 20px;
 				text-align: center;
 			}
+
 			.table {
 				background-color: #ffffff;
 				box-shadow: 2px 2px 15px -3px rgba(0,0,0,0.75);
 			}
+
 			#balance-text {
 				text-align: center;
 				margin-top: -20px;
 				margin-bottom: 30px;
 			}
+
 			.margin-auto {
 				margin: auto;
 				display: block;
 			}
+
 			.btn-search {
 				margin-bottom: 50px;
 			}
+
 			.bold {
 				font-weight: 700;
 			}
+
 			.no-data-text {
 				color: red;
 				text-align: center;
+			}
+
+			.switch {
+				position: relative;
+				width: 60px;
+				height: 34px;
+				margin: 0 auto;
+			}
+
+			.switch input {
+				opacity: 0;
+				width: 0;
+				height: 0;
+			}
+
+			.slider {
+				position: absolute;
+				cursor: pointer;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-color: #ccc;
+				-webkit-transition: .4s;
+				transition: .4s;
+			}
+
+			.slider:before {
+				position: absolute;
+				content: "";
+				height: 26px;
+				width: 26px;
+				left: 4px;
+				bottom: 4px;
+				background-color: white;
+				-webkit-transition: .4s;
+				transition: .4s;
+			}
+
+			input:checked + .slider {
+				background-color: #2196F3;
+			}
+
+			input:focus + .slider {
+				box-shadow: 0 0 1px #2196F3;
+			}
+
+			input:checked + .slider:before {
+				-webkit-transform: translateX(26px);
+				-ms-transform: translateX(26px);
+				transform: translateX(26px);
+			}
+
+			/* Rounded sliders */
+			.slider.round {
+				border-radius: 34px;
+			}
+
+			.slider.round:before {
+				border-radius: 50%;
 			}
 		</style>
 	</body>
