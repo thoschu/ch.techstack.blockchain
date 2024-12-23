@@ -1,19 +1,24 @@
 import { Server } from 'http';
-
-import express, { Express, Request, Response } from 'express';
+import { env } from 'process';
+import express, { Express } from 'express';
 import expressStatusMonitor  from 'express-status-monitor';
 import { format, transports }  from 'winston';
 import expressWinston  from 'express-winston';
+import swaggerUi from 'swagger-ui-express';
+import bodyParser from 'body-parser';
 
-import { Blockchain } from '@blockchain/blockchain.class';
-import Block from '@blockchain/block/block.class';
+import { swaggerSpecs } from '@api/api-v3/swagger';
+import getRoutes from '@routes/get.routes';
+import postRoutes from '@routes/post.routes';
+import {Blockchain} from "@blockchain/blockchain.class";
 
-const blockchain: Blockchain = new Blockchain();
 const app: Express = express();
-const port: string = process.env.PORT!;
-const apiKey: string  = process.env.API_KEY!;
+const port: string = env.PORT ?? '3000';
+export const blockchain: Blockchain<number> = new Blockchain<number>();
 
 app.use(expressStatusMonitor());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 app.use(expressWinston.logger({
   transports: [
@@ -21,7 +26,6 @@ app.use(expressWinston.logger({
   ],
   format: format.combine(
     format.colorize(),
-    // format.timestamp(),
     format.json()
   ),
   meta: true,
@@ -30,58 +34,12 @@ app.use(expressWinston.logger({
   colorize: true
 }));
 
-app.get('/', (req: Request, res: Response): void => {
-  res.send(blockchain.id);
-});
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.use('/api/v3', getRoutes);
+app.use('/api/v3', postRoutes);
 
-app.get('/info', async (req: Request, res: Response) => {
-  const headers = {
-    Accept: 'application/json',
-    'X-API-Token': apiKey
-  };
-
-  const promRes: unknown = await fetch('https://api.blockchain.com/v3/exchange/l2/BTC-USD',{
-      method: 'GET',
-      headers
-    })
-    .then(async (res) => {
-      return await res.json()
-    })
-    .then((body) => body);
-
-  res.send(promRes);
-});
-
-app.get('/is-valid', (req: Request, res: Response): void => {
-  const isValid: boolean = blockchain.isChainValid(blockchain.chain);
-
-  res.send({
-    'message': isValid ? 'The blockchain is valid! ✅' : 'The blockchain is not valid! ❌',
-    'length': blockchain.chain.length
-  });
-});
-
-app.get('/get-chain', (req: Request, res: Response): void => {
-  res.send({
-    'length': blockchain.chain.length,
-    'chain': blockchain.chain,
-    });
-});
-
-app.get('/mine-block', (req: Request, res: Response): void => {
-  const previousBlock: Block = blockchain.getPreviousBlock()!;
-  const previousProof: number = previousBlock.proof;
-  const proof: number = blockchain.proofOfWork(previousProof);
-  const previousHash: string = blockchain.hash(previousBlock);
-  const block: Block = blockchain.createBlock(proof, previousHash);
-
-  res.send({
-    'message': 'Congratulations, you just mined a block!',
-    'index': block.index,
-    'timestamp': block.timestamp,
-    'proof': block.proof,
-    'previousHash': block.previousHash
-  });
+app.get('/', (req, res) => {
+  res.redirect(301, '/api/v3/get-chain');
 });
 
 const server: Server = app.listen(port, (): void => {
