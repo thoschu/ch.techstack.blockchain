@@ -1,10 +1,11 @@
-import { BinaryLike, createHash } from 'crypto';
+import { BinaryLike, createHash, generateKeyPairSync } from 'crypto';
+import axios, { AxiosResponse } from 'axios';
 import {
-  add,
+  add, and,
   clone,
-  equals,
+  equals, gt,
   head,
-  inc,
+  inc, isNotEmpty,
   last,
   length,
   multiply,
@@ -15,13 +16,15 @@ import {
   subtract,
   toString
 } from 'ramda';
-import { v7 as UUIDv7 } from 'uuid';
+import { v5 as UUIDv5, v7 as UUIDv7 } from 'uuid';
 
 import Block from '@blockchain/block/block.class';
 import { Validator } from '@blockchain/validator/validator.interface';
 import { Transaction } from "@blockchain/transaction/transaction.class";
 
 export class Blockchain<T> {
+  public static nodeAddress: string;
+  private readonly _nodes: Set<string> = new Set<string>();
   private readonly _timestamp: number = Date.now();
   private readonly _id: string = UUIDv7();
   private readonly _chain: Block<T>[] = [];
@@ -29,7 +32,9 @@ export class Blockchain<T> {
   private readonly _validators: Validator[] = [];
   private _difficulty: number;
 
-  constructor(difficulty: number = 4) {
+  constructor(nodeUrl: URL, difficulty: number = 4) {
+    Blockchain.nodeAddress = UUIDv5(nodeUrl.href, UUIDv5.URL);
+
     this._difficulty = difficulty;
 
     this.createGenesisBlock();
@@ -45,6 +50,10 @@ export class Blockchain<T> {
   }
   public set difficulty(difficulty: number) {
     this._difficulty = difficulty;
+  }
+
+  public get nodes(): Set<string> {
+    return this._nodes;
   }
 
   public get chain(): Block<T>[] {
@@ -65,6 +74,48 @@ export class Blockchain<T> {
 
   public get validators(): any {
     return this._validators;
+  }
+
+  public generateKeyPair(): { publicKey: string; privateKey: string } {
+    const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+
+    return {
+      publicKey: publicKey.export({ type: 'pkcs1', format: 'pem' }).toString(),
+      privateKey: privateKey.export({ type: 'pkcs1', format: 'pem' }).toString(),
+    };
+  }
+
+  public async replaceChain() {
+    let longestChain: Block<T>[] = [];
+    let maxLength: number = length<Block<T>[]>(this._chain);
+
+    for (const item of this.nodes) {
+      const apiResponse: AxiosResponse = await axios.get( `${item}api/v3/get-chain`);
+      const { data, status }: Record<'data', Record<'length', number> & Record<'chain', Block<T>[]>> & Record<'status', number> = apiResponse;
+      const { length: currentBlockChainLength, chain: currentBlockChain }: Record<'length', number> & Record<'chain', Block<T>[]> = data;
+      const isCurrentBlockChainLengthGreaterThenMaxLength: boolean = gt<number>(currentBlockChainLength, maxLength);
+      const isCurrentBlockChainValid: boolean = this.isChainValid(currentBlockChain);
+
+      if(/*(status === 200) &&*/ and<boolean, boolean>(isCurrentBlockChainLengthGreaterThenMaxLength, isCurrentBlockChainValid)) {
+        maxLength = currentBlockChainLength;
+        longestChain = currentBlockChain;
+      }
+    }
+
+    if(isNotEmpty<Block<T>>(longestChain)) {
+      this._chain.length = 0;
+      this._chain.push(...longestChain);
+
+      return true;
+    }
+
+    return false;
+  }
+
+  public addNode(node: URL): void {
+    this._nodes.add(node.href);
   }
 
   public addTransaction(sender: string, receiver: string, amount: T) {
@@ -104,6 +155,7 @@ export class Blockchain<T> {
   public createBlock(nonce: number, previousHash: string): Block<T> {
     const blockchainLength: number = length<Block<T>[]>(this._chain);
     const index: number = inc(blockchainLength);
+    // add transaction for mining reward: (sender: Blockchain.nodeAddress, receiver: 'Tom S.', amount: 1)
     const transactions: Transaction<T>[] = clone<Transaction<T>>(this._transactions);
     const block: Block<T> = new Block<T>(index, nonce, previousHash, transactions);
 

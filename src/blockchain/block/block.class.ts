@@ -1,4 +1,4 @@
-import { Block as IBlock } from "@blockchain/block/block.interface";
+import { Block as IBlock } from '@blockchain/block/block.interface';
 import { Transaction } from '@blockchain/transaction/transaction.class';
 import { Validator } from '@blockchain/validator/validator.interface';
 

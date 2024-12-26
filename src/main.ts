@@ -1,4 +1,5 @@
 import { Server } from 'http';
+import { AddressInfo } from 'net';
 import { env } from 'process';
 import express, { Express } from 'express';
 import expressStatusMonitor  from 'express-status-monitor';
@@ -10,11 +11,11 @@ import bodyParser from 'body-parser';
 import { swaggerSpecs } from '@api/api-v3/swagger';
 import getRoutes from '@routes/get.routes';
 import postRoutes from '@routes/post.routes';
-import {Blockchain} from "@blockchain/blockchain.class";
+import { Blockchain } from "@blockchain/blockchain.class";
 
 const app: Express = express();
-const port: string = env.PORT ?? '3000';
-export const blockchain: Blockchain<number> = new Blockchain<number>();
+const port: number = parseInt(env.PORT!, 10) ?? 3000;
+export let blockchain: Blockchain<number>;
 
 app.use(expressStatusMonitor());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -42,8 +43,17 @@ app.get('/', (req, res) => {
   res.redirect(301, '/api/v3/get-chain');
 });
 
-const server: Server = app.listen(port, (): void => {
-    console.log(`[server]: Server is running at http://localhost:${port}`);
+const server: Server = app.listen(port, '0.0.0.0', 0,(): void => {
+  const protocol: string = 'http:';
+  const { address }: { address: string } = <AddressInfo>server.address();
+  const baseUrl: string = `${protocol}//${address}:${port}`;
+  const url: URL = new URL('/', baseUrl);
+
+  blockchain = new Blockchain<number>(url);
+
+  blockchain.addNode(url);
+
+  console.log(`[server]: Server is running at ${url.href}`);
 });
 
 process.on('SIGBREAK', (): void => {

@@ -6,7 +6,7 @@ const options: Options = {
     info: {
       title: 'Express API with Swagger',
       version: '1.0.0',
-      description: 'Dokumentation der API-Endpunkte mit Swagger',
+      description: 'Dokumentation der API-Endpunkte mit Swagger'
     },
     servers: [
       {
