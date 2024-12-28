@@ -9,6 +9,6 @@ export interface Block<T> {
     readonly hash: string;
     readonly transactions: Transaction<T>[];
     readonly coinBase: any | null;
-    readonly data: string | null;
+    readonly data: string | unknown | null;
     readonly validator: Validator | string | null;
 }

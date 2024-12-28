@@ -1,18 +1,19 @@
+import { env } from 'process';
 import swaggerJsdoc, { Options } from 'swagger-jsdoc';
 
 const options: Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Express API with Swagger',
-      version: '1.0.0',
-      description: 'Dokumentation der API-Endpunkte mit Swagger'
+      title: 'Express-Blockchain API with Swagger',
+      version: '3.0.0',
+      description: 'Dokumentation der API-Endpunkte mit Swagger',
     },
     servers: [
       {
-        url: 'http://localhost:3000/api/v3',
-        description: 'Lokaler Server',
-      },
+        url: `http://localhost:${parseInt(env.PORT!, 10) ?? 3000}/api/v3`,
+        description: 'Blockchain Server by Tom S.',
+      }
     ],
   },
   apis: [

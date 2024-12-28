@@ -3,7 +3,7 @@ import axios, { AxiosResponse } from 'axios';
 import {
   add, and,
   clone,
-  equals, gt,
+  equals, gt, gte,
   head,
   inc, isNotEmpty,
   last,
@@ -155,8 +155,13 @@ export class Blockchain<T> {
   public createBlock(nonce: number, previousHash: string): Block<T> {
     const blockchainLength: number = length<Block<T>[]>(this._chain);
     const index: number = inc(blockchainLength);
-    // add transaction for mining reward: (sender: Blockchain.nodeAddress, receiver: 'Tom S.', amount: 1)
     const transactions: Transaction<T>[] = clone<Transaction<T>>(this._transactions);
+
+    // mining reward:
+    if(gte<number>(length<Block<T>[]>(this._chain), 1)) {
+      transactions.push(new Transaction<T>(Blockchain.nodeAddress, 'Tom S.', 1 as T));
+    }
+
     const block: Block<T> = new Block<T>(index, nonce, previousHash, transactions);
 
     this._transactions.length = 0;
@@ -169,7 +174,7 @@ export class Blockchain<T> {
     return last<Block<T>>(this._chain)!;
   }
 
-  public proofOfWork(previousProof: number,): number {
+  public proofOfWork(previousProof: number): number {
     const target: string = '0'.repeat(this.difficulty);
     let newProof: number = 0;
     let checkProof: boolean = true;
@@ -203,11 +208,11 @@ export class Blockchain<T> {
     return createHash('sha256').update(data).digest('hex');
   }
 
-  public isChainValid(chain: Array<Block<T>>): boolean {
+  public isChainValid(chain: ReadonlyArray<Block<T>>): boolean {
     let previousBlock: Block<T> = head<Block<T>>(chain)!;
     let blockIndex: number = 1;
 
-    while (blockIndex < length<Block<T>[]>(chain)) {
+    while (blockIndex < length<Block<T>[]>([...chain])) {
       const block: Block<T> = nth(blockIndex, chain)!;
       const previousHash: string = prop<'previousHash', Block<T>>('previousHash', block);
 

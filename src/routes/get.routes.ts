@@ -31,6 +31,8 @@ router.get('/info', async (req: Request, res: Response) => {
  *   get:
  *     summary: Überprüft die Gültigkeit der Blockchain
  *     description: Prüft, ob die Blockchain gültig ist und gibt die Anzahl der Blöcke zurück.
+ *     tags:
+ *       - Blockchain
  *     responses:
  *       200:
  *         description: Ergebnis der Blockchain-Validitätsprüfung.
@@ -63,6 +65,8 @@ router.get('/is-valid', (req: Request, res: Response): void => {
  *   get:
  *     summary: Gibt die gesamte Blockchain zurück
  *     description: Liefert die aktuelle Blockchain und die Anzahl der Blöcke.
+ *     tags:
+ *       - Blockchain
  *     responses:
  *       200:
  *         description: Erfolgreiche Rückgabe der Blockchain-Daten.
@@ -144,6 +148,8 @@ router.get('/get-chain', (req: Request, res: Response): void => {
  *   get:
  *     summary: Gibt die Liste der aktuellen Transaktionen zurück
  *     description: Liefert alle Transaktionen, die noch nicht in einem Block enthalten sind.
+ *     tags:
+ *       - Blockchain
  *     responses:
  *       200:
  *         description: Erfolgreiches Abrufen der Transaktionsliste.
@@ -189,6 +195,8 @@ router.get('/get-transactions', (req: Request, res: Response): void => {
  *   get:
  *     summary: Gibt die aktuellen Knoten im Blockchain-Netzwerk zurück
  *     description: Zeigt alle registrierten Knoten an und synchronisiert die Blockchain, falls erforderlich.
+ *     tags:
+ *       - Blockchain
  *     responses:
  *       200:
  *         description: Erfolgreiches Abrufen der Knoten im Netzwerk.
@@ -221,6 +229,8 @@ router.get('/get-nodes', (req: Request, res: Response): void => {
  *   get:
  *     summary: Erstellt einen neuen Block durch Mining
  *     description: Führt den Proof-of-Work-Algorithmus aus, erstellt einen neuen Block und fügt ihn der Blockchain hinzu.
+ *     tags:
+ *       - Blockchain
  *     responses:
  *       200:
  *         description: Erfolgreiches Mining eines neuen Blocks.
@@ -299,6 +309,49 @@ router.get('/mine-block', (req: Request, res: Response): void => {
   });
 });
 
+/**
+ * @swagger
+ * /replace-chain:
+ *   get:
+ *     summary: Check and replace the blockchain if necessary.
+ *     description: >
+ *       This endpoint compares the current blockchain with chains on other nodes.
+ *       If a longer chain is found, it replaces the local blockchain to ensure consistency
+ *       across the network. If the current chain is already the largest, no changes are made.
+ *     tags:
+ *       - Blockchain
+ *     responses:
+ *       200:
+ *         description: Successful response with the status of the blockchain replacement.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Status of the blockchain replacement.
+ *                   example: "The nodes had different chains ❗"
+ *                 chain:
+ *                   type: array
+ *                   description: The current state of the blockchain.
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       index:
+ *                         type: integer
+ *                         description: The block index.
+ *                       data:
+ *                         type: string
+ *                         description: The data stored in the block.
+ *                   example: [{ index: 1, data: "Genesis Block" }]
+ *                 length:
+ *                   type: integer
+ *                   description: The length of the blockchain.
+ *                   example: 5
+ *       500:
+ *         description: Internal server error. Something went wrong while processing the request.
+ */
 router.get('/replace-chain', async (req: Request, res: Response): Promise<void> => {
   const isChainReplaced: boolean = await blockchain.replaceChain();
 
