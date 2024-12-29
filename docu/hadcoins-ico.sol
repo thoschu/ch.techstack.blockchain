@@ -3,13 +3,13 @@ pragma solidity >=0.4.16 <0.9.0;
 
 contract CoinICO {
   // max number of coins available for sale
-  uint private maxCoins = 1000000;
+  uint public maxCoins = 1000000;
 
   // the USD to coins conversion rate
-  uint private usdToCoins = 10;
+  uint public usdToCoins = 10;
 
   // total number of coins that have been bought by the investor
-  uint private totalCoinsBought = 0;
+  uint public totalCoinsBought = 0;
 
   // mapping from the investor address to its equity in coins
   mapping(address => uint) public equityCoins;

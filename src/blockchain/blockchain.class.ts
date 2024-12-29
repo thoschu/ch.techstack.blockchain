@@ -1,26 +1,18 @@
 import { BinaryLike, createHash, generateKeyPairSync } from 'crypto';
 import axios, { AxiosResponse } from 'axios';
 import {
-  add, and,
-  clone,
-  equals, gt, gte,
-  head,
-  inc, isNotEmpty,
-  last,
-  length,
-  multiply,
-  not,
-  nth,
-  prop,
-  startsWith,
-  subtract,
-  toString
+  add, and, clone, equals,
+  gt, gte, head, inc,
+  isNotEmpty, last, length,
+  multiply, not, nth, prop, ReadonlyNonEmptyArray,
+  startsWith, subtract, toString
 } from 'ramda';
 import { v5 as UUIDv5, v7 as UUIDv7 } from 'uuid';
 
 import Block from '@blockchain/block/block.class';
 import { Validator } from '@blockchain/validator/validator.interface';
 import { Transaction } from "@blockchain/transaction/transaction.class";
+import {SmartContract} from "@blockchain/smartcontract/smartcontract.interface";
 
 export class Blockchain<T> {
   public static nodeAddress: string;
@@ -30,6 +22,7 @@ export class Blockchain<T> {
   private readonly _chain: Block<T>[] = [];
   private readonly _transactions: Transaction<T>[] = [];
   private readonly _validators: Validator[] = [];
+  private readonly _contracts: Map<string, SmartContract<T, unknown>> = new Map<string, SmartContract<T, unknown>>();
   private _difficulty: number;
 
   constructor(nodeUrl: URL, difficulty: number = 4) {
@@ -76,6 +69,21 @@ export class Blockchain<T> {
     return this._validators;
   }
 
+  public get contracts(): any {
+    return this._contracts;
+  }
+
+  public registerSmartContract(name: string, contract: SmartContract<T, unknown>): void {
+    this._contracts.set(name, contract);
+    console.log(`Smart Contract "${name}" registered.`);
+  }
+
+  // public executeSmartContract(name: string, data: any): any {
+  //   const contract = this._smartContracts.get(name);
+  //   if (!contract) throw new Error(`Smart Contract "${name}" not found.`);
+  //   return contract.execute(data, this.chain);
+  // }
+
   public generateKeyPair(): { publicKey: string; privateKey: string } {
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
       modulusLength: 2048,
@@ -118,15 +126,15 @@ export class Blockchain<T> {
     this._nodes.add(node.href);
   }
 
-  public addTransaction(sender: string, receiver: string, amount: T) {
+  public addTransaction(sender: string, receiver: string, amount: T): { transaction: Transaction<T>; position: number; index: number } {
     const transaction: Transaction<T> = new Transaction<T>(sender, receiver, amount);
+    const position: number = this._transactions.push(transaction);
     const previousBlock: Block<T> = this.getPreviousBlock();
     const previousBlockIndex: number = prop<'index', Block<T>>('index', previousBlock);
 
-    this._transactions.push(transaction);
-
     return {
       transaction,
+      position,
       index: inc(previousBlockIndex)
     };
   }
@@ -152,7 +160,7 @@ export class Blockchain<T> {
     throw new Error("Validator selection failed");
   }
 
-  public createBlock(nonce: number, previousHash: string): Block<T> {
+  public createBlock(nonce: number, previousHash: string, hash: string): Block<T> {
     const blockchainLength: number = length<Block<T>[]>(this._chain);
     const index: number = inc(blockchainLength);
     const transactions: Transaction<T>[] = clone<Transaction<T>>(this._transactions);
@@ -162,7 +170,7 @@ export class Blockchain<T> {
       transactions.push(new Transaction<T>(Blockchain.nodeAddress, 'Tom S.', 1 as T));
     }
 
-    const block: Block<T> = new Block<T>(index, nonce, previousHash, transactions);
+    const block: Block<T> = new Block<T>(index, nonce, previousHash, hash, transactions);
 
     this._transactions.length = 0;
     this._chain.push(block);
@@ -204,6 +212,12 @@ export class Blockchain<T> {
     return this.getSHA256(encodedBlock);
   }
 
+  public hashBlock(previousHash: string, blockData: ReadonlyArray<Transaction<T>>, nonce: number): string {
+    const encodedBlock: string = previousHash.concat(toString<ReadonlyArray<Transaction<T>>>(blockData)).concat(toString<number>(nonce));
+
+    return this.getSHA256(encodedBlock);
+  }
+
   public getSHA256(data: BinaryLike): string {
     return createHash('sha256').update(data).digest('hex');
   }
@@ -220,9 +234,9 @@ export class Blockchain<T> {
         return false;
       }
 
-      const previousProof: number = prop<'proof', Block<T>>('proof', previousBlock);
-      const proof: number = prop<'proof', Block<T>>('proof', block);
-      const operation: number = subtract(proof ** 2, previousProof ** 2);
+      const previousNonce: number = prop<'nonce', Block<T>>('nonce', previousBlock);
+      const nonce: number = prop<'nonce', Block<T>>('nonce', block);
+      const operation: number = subtract(nonce ** 2, previousNonce ** 2);
       const hashOperation: string = this.getSHA256(toString<number>(operation));
       const target: string = '0'.repeat(this.difficulty);
 
@@ -238,6 +252,6 @@ export class Blockchain<T> {
   }
 
   private createGenesisBlock(): Block<T> {
-    return this.createBlock(-1, '0000');
+    return this.createBlock(-1, '0000', '0000');
   }
 }

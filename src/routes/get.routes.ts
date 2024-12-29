@@ -298,10 +298,10 @@ router.get('/get-nodes', (req: Request, res: Response): void => {
  */
 router.get('/mine-block', (req: Request, res: Response): void => {
   const previousBlock: Block<number> = blockchain.getPreviousBlock()!;
-  const previousProof: number = previousBlock.proof;
-  const proof: number = blockchain.proofOfWork(previousProof);
+  const previousNonce: number = previousBlock.nonce;
+  const nonce: number = blockchain.proofOfWork(previousNonce);
   const previousHash: string = blockchain.hash(previousBlock);
-  const block: Block<number> = blockchain.createBlock(proof, previousHash);
+  const block: Block<number> = blockchain.createBlock(nonce, previousHash, '');
 
   res.send({
     'message': 'Congratulations, you just mined a block!',
