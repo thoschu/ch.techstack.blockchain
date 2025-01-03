@@ -2,21 +2,33 @@ import { BinaryLike, createHash, generateKeyPairSync } from 'crypto';
 import axios, { AxiosResponse } from 'axios';
 import {
   add, and, clone, equals,
-  gt, gte, head, inc,
+  gt, head, inc,
   isNotEmpty, last, length,
-  multiply, not, nth, prop, ReadonlyNonEmptyArray,
-  startsWith, subtract, toString
+  multiply, not, nth, prop,
+  subtract, toString
 } from 'ramda';
 import { v5 as UUIDv5, v7 as UUIDv7 } from 'uuid';
 
 import Block from '@blockchain/block/block.class';
 import { Validator } from '@blockchain/validator/validator.interface';
-import { Transaction } from "@blockchain/transaction/transaction.class";
-import {SmartContract} from "@blockchain/smartcontract/smartcontract.interface";
+import { Transaction } from '@blockchain/transaction/transaction.class';
+import { SmartContract } from '@blockchain/smartcontract/smartcontract.interface';
+
+export type BlockData<T> = {
+  transactions: ReadonlyArray<Transaction<T>>;
+  index: number;
+};
+
+export type AddTransactionReturn<T> = {
+  transaction: Transaction<T>;
+  position: number;
+  index: number;
+};
 
 export class Blockchain<T> {
   public static nodeAddress: string;
-  private readonly _nodes: Set<string> = new Set<string>();
+  public readonly networkNode: string;
+  private readonly _networkNodes: Set<string> = new Set<string>();
   private readonly _timestamp: number = Date.now();
   private readonly _id: string = UUIDv7();
   private readonly _chain: Block<T>[] = [];
@@ -26,7 +38,9 @@ export class Blockchain<T> {
   private _difficulty: number;
 
   constructor(nodeUrl: URL, difficulty: number = 4) {
-    Blockchain.nodeAddress = UUIDv5(nodeUrl.href, UUIDv5.URL);
+    Blockchain.nodeAddress = UUIDv5(nodeUrl.href, UUIDv5.URL).split('-').join('');
+
+    this.networkNode = nodeUrl.href;
 
     this._difficulty = difficulty;
 
@@ -45,8 +59,8 @@ export class Blockchain<T> {
     this._difficulty = difficulty;
   }
 
-  public get nodes(): Set<string> {
-    return this._nodes;
+  public get networkNodes(): Set<string> {
+    return this._networkNodes;
   }
 
   public get chain(): Block<T>[] {
@@ -65,7 +79,7 @@ export class Blockchain<T> {
     return this._timestamp;
   }
 
-  public get validators(): any {
+  public get validators(): Validator[] {
     return this._validators;
   }
 
@@ -99,7 +113,7 @@ export class Blockchain<T> {
     let longestChain: Block<T>[] = [];
     let maxLength: number = length<Block<T>[]>(this._chain);
 
-    for (const item of this.nodes) {
+    for (const item of this.networkNodes) {
       const apiResponse: AxiosResponse = await axios.get( `${item}api/v3/get-chain`);
       const { data, status }: Record<'data', Record<'length', number> & Record<'chain', Block<T>[]>> & Record<'status', number> = apiResponse;
       const { length: currentBlockChainLength, chain: currentBlockChain }: Record<'length', number> & Record<'chain', Block<T>[]> = data;
@@ -122,20 +136,23 @@ export class Blockchain<T> {
     return false;
   }
 
-  public addNode(node: URL): void {
-    this._nodes.add(node.href);
+  public addNode(node: URL): Set<string> {
+    const { href }: Record<'href', string> = node;
+
+    return this._networkNodes.add(href);
   }
 
-  public addTransaction(sender: string, receiver: string, amount: T): { transaction: Transaction<T>; position: number; index: number } {
+  public addTransaction(sender: string, receiver: string, amount: T): AddTransactionReturn<T> {
     const transaction: Transaction<T> = new Transaction<T>(sender, receiver, amount);
     const position: number = this._transactions.push(transaction);
     const previousBlock: Block<T> = this.getPreviousBlock();
     const previousBlockIndex: number = prop<'index', Block<T>>('index', previousBlock);
+    const index: number = inc(previousBlockIndex);
 
     return {
       transaction,
       position,
-      index: inc(previousBlockIndex)
+      index
     };
   }
 
@@ -164,12 +181,6 @@ export class Blockchain<T> {
     const blockchainLength: number = length<Block<T>[]>(this._chain);
     const index: number = inc(blockchainLength);
     const transactions: Transaction<T>[] = clone<Transaction<T>>(this._transactions);
-
-    // mining reward:
-    if(gte<number>(length<Block<T>[]>(this._chain), 1)) {
-      transactions.push(new Transaction<T>(Blockchain.nodeAddress, 'Tom S.', 1 as T));
-    }
-
     const block: Block<T> = new Block<T>(index, nonce, previousHash, hash, transactions);
 
     this._transactions.length = 0;
@@ -182,38 +193,28 @@ export class Blockchain<T> {
     return last<Block<T>>(this._chain)!;
   }
 
-  public proofOfWork(previousProof: number): number {
-    const target: string = '0'.repeat(this.difficulty);
-    let newProof: number = 0;
-    let checkProof: boolean = true;
+  public proofOfWork(previousHash: string, blockData: BlockData<T>): number {
+    const zero: string = '0';
+    const target: string = zero.repeat(this.difficulty);
+    let nonce: number = 0;
+    let hash: string = this.hashBlock(previousHash, blockData, nonce);
 
-    while (checkProof) {
-      const operation: number = subtract(newProof ** 2, previousProof ** 2);
-      const toCryptBinaryLike: string = toString<number>(operation)
-      const hashOperation: string = this.getSHA256(toCryptBinaryLike);
-      const hashOperationSubstring: string = hashOperation.substring(0, 4);
-      const substringStartsWithTarget: boolean = startsWith(target, hashOperationSubstring);
-
-      checkProof = not(substringStartsWithTarget);
-
-      if (checkProof) {
-        newProof = ++newProof;
-      } else {
-        console.log(hashOperation);
-      }
+    while (not(equals<string>(hash.substring(0, this.difficulty), target))) {
+      nonce++;
+      hash = this.hashBlock(previousHash, blockData, nonce);
     }
 
-    return newProof;
+    return nonce;
   }
 
-  public hash(block: Block<T>): string {
-    const encodedBlock: string = toString<Block<T>>(block);
+  // public hash(block: Block<T>): string {
+  //   const encodedBlock: string = toString<Block<T>>(block);
+  //
+  //   return this.getSHA256(encodedBlock);
+  // }
 
-    return this.getSHA256(encodedBlock);
-  }
-
-  public hashBlock(previousHash: string, blockData: ReadonlyArray<Transaction<T>>, nonce: number): string {
-    const encodedBlock: string = previousHash.concat(toString<ReadonlyArray<Transaction<T>>>(blockData)).concat(toString<number>(nonce));
+  public hashBlock(previousHash: string, blockData: BlockData<T>, nonce: number): string {
+    const encodedBlock: string = previousHash.concat(toString<BlockData<T>>(blockData)).concat(toString<number>(nonce));
 
     return this.getSHA256(encodedBlock);
   }
@@ -229,10 +230,11 @@ export class Blockchain<T> {
     while (blockIndex < length<Block<T>[]>([...chain])) {
       const block: Block<T> = nth(blockIndex, chain)!;
       const previousHash: string = prop<'previousHash', Block<T>>('previousHash', block);
-
-      if (not(equals<string>(previousHash, this.hash(previousBlock)))) {
-        return false;
-      }
+      // const hash: string = this.hashBlock(previousHash, blockData, nonce);
+      //
+      // if (not(equals<string>(previousHash, this.hashBlock(previousBlock)))) {
+      //   return false;
+      // }
 
       const previousNonce: number = prop<'nonce', Block<T>>('nonce', previousBlock);
       const nonce: number = prop<'nonce', Block<T>>('nonce', block);
@@ -252,6 +254,13 @@ export class Blockchain<T> {
   }
 
   private createGenesisBlock(): Block<T> {
-    return this.createBlock(-1, '0000', '0000');
+    const previousHash: string = '0000';
+    const index: number = 1;
+    const transactions: Transaction<T>[] = this.transactions;
+    const blockData: BlockData<T> = { transactions, index };
+    const nonce: number = this.proofOfWork(previousHash, blockData);
+    const hash: string = this.hashBlock(previousHash, blockData, nonce);
+
+    return this.createBlock(-1, previousHash, hash);
   }
 }

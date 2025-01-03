@@ -1,10 +1,10 @@
 import { createHash } from 'crypto';
 import { isUUID, UUIDVersion } from 'validator';
+import {last, toString} from 'ramda';
 
-import { Blockchain } from '@blockchain/blockchain.class';
+import { Blockchain, BlockData } from '@blockchain/blockchain.class';
 import Block from '@blockchain/block/block.class';
-import {Transaction} from '@blockchain/transaction/transaction.class';
-import {toString} from "ramda";
+import { Transaction } from '@blockchain/transaction/transaction.class';
 
 const protocol: string = 'http:';
 const address: string  = '0.0.0.0';
@@ -23,7 +23,7 @@ describe('📍 Blockchain', (): void => {
     expect(blockchain.transactions.length).toBe(0);
     expect(blockchain.validators.length).toBe(0);
     expect(blockchain.contracts.size).toBe(0);
-    expect(blockchain.nodes.size).toBe(0);
+    expect(blockchain.networkNodes.size).toBe(0);
     expect(blockchain.difficulty).toBe(4);
   });
 
@@ -72,7 +72,7 @@ describe('📍 Blockchain', (): void => {
     let block: Block<number> = blockchain.createBlock(0, '0000', createHash('sha256').update('a').digest('hex'));
 
     expect(blockchain.transactions.length).toBe(0);
-    expect(block.transactions.length).toBe(3);
+    expect(block.transactions.length).toBe(2);
     expect(block.transactions[1]).toStrictEqual(tx.transaction);
 
     blockchain.addTransaction(from, to, value + 1);
@@ -88,20 +88,42 @@ describe('📍 Blockchain', (): void => {
 
     expect(blockchain.transactions.length).toBe(0);
     expect(blockchain.chain.length).toBe(3);
-    expect(block.transactions.length).toBe(5);
-    expect(block.transactions[block.transactions.length - 2]).toStrictEqual(tx.transaction);
+    expect(block.transactions.length).toBe(4);
+    expect(last<Transaction<number>>(block.transactions)).toStrictEqual(tx.transaction);
   });
 
   test('❗ hashBlock(previousHash: string, blockData: ReadonlyArray<Transaction<T>>, nonce: number): string', (): void => {
     const { previousHash }: Record<'previousHash', string> = blockchain.getPreviousBlock();
     const firstTransaction: Transaction<number> = new Transaction<number>('Tom S.', 'John D.', 10);
     const secondTransaction: Transaction<number> = new Transaction<number>('Jane D.', 'Tom S.', 100);
-    const blockData: Transaction<number>[] = [firstTransaction, secondTransaction];
+    const blockData: BlockData<number> = {transactions: [firstTransaction, secondTransaction], index: 1};
     const nonce: number = 0;
     const hash: string = blockchain.hashBlock(previousHash, blockData, nonce);
-    const data: string = previousHash.concat(toString<Transaction<number>[]>(blockData)).concat(toString<number>(nonce));
+    const data: string = previousHash.concat(toString<BlockData<number>>(blockData)).concat(toString<number>(nonce));
     const localHash: string = createHash('sha256').update(data).digest('hex');
 
     expect(hash).toBe(localHash);
+  });
+
+  test('❗ proofOfWork(previousHash: string, blockData: ReadonlyArray<Transaction<T>>): number', (): void => {
+    const zero: string = '0';
+    const target: string = zero.repeat(blockchain.difficulty);
+    const { hash: previousHash }: Record<'hash', string> = blockchain.getPreviousBlock();
+    let { transactions }: { transactions: ReadonlyArray<Transaction<number>> } = blockchain;
+    let blockData: BlockData<number> = { transactions, index: 1 };
+    let nonce: number = blockchain.proofOfWork(previousHash, blockData);
+    let hash: string = blockchain.hashBlock(previousHash, blockData, nonce);
+
+    expect(nonce).toBe(68519);
+    expect(hash.substring(0, blockchain.difficulty)).toBe(target);
+
+    const firstTransaction: Transaction<number> = new Transaction<number>('Tom S.', 'John D.', 10);
+    const secondTransaction: Transaction<number> = new Transaction<number>('Jane D.', 'Tom S.', 100);
+    const lastTransaction: Transaction<number> = new Transaction<number>('Papa', 'Mama', 100);
+    blockData = { transactions: [firstTransaction, secondTransaction, lastTransaction], index: 1 };
+    nonce = blockchain.proofOfWork(previousHash, blockData);
+    hash = blockchain.hashBlock(previousHash, blockData, nonce);
+
+    expect(hash.substring(0, blockchain.difficulty)).toBe(target);
   });
 });
