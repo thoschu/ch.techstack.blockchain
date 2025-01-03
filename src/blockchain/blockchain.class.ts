@@ -142,8 +142,25 @@ export class Blockchain<T> {
     return this._networkNodes.add(href);
   }
 
+  public createTransaction(sender: string, receiver: string, amount: T): Transaction<T> {
+    return new Transaction<T>(sender, receiver, amount);
+  }
+
+  public addNewTransaction(transaction: Transaction<T>): AddTransactionReturn<T> {
+    const position: number = this._transactions.push(transaction);
+    const previousBlock: Block<T> = this.getPreviousBlock();
+    const previousBlockIndex: number = prop<'index', Block<T>>('index', previousBlock);
+    const index: number = inc(previousBlockIndex);
+
+    return {
+      transaction,
+      position,
+      index
+    };
+  }
+
   public addTransaction(sender: string, receiver: string, amount: T): AddTransactionReturn<T> {
-    const transaction: Transaction<T> = new Transaction<T>(sender, receiver, amount);
+    const transaction: Transaction<T> = this.createTransaction(sender, receiver, amount);
     const position: number = this._transactions.push(transaction);
     const previousBlock: Block<T> = this.getPreviousBlock();
     const previousBlockIndex: number = prop<'index', Block<T>>('index', previousBlock);

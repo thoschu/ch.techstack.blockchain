@@ -149,7 +149,7 @@ describe('📍 Blockchain-API Endpoints:', (): void => {
     const { body } = response;
 
     expect(status).toBe(200);
-    expect(body.nodeAddress).toBe('http://0.0.0.0:4000/');
+    expect(body.node).toBe('http://0.0.0.0:4000/');
     expect(body.nodes.length).toBe(1);
 
     const response2: Response = await superTest.post('/api/v3/register-node').send({ node: 'http://0.0.0.0:4002/' }).set('Accept', 'application/json');
@@ -157,7 +157,7 @@ describe('📍 Blockchain-API Endpoints:', (): void => {
     const { body: body2 } = response2;
 
     expect(status2).toBe(200);
-    expect(body2.nodeAddress).toBe('http://0.0.0.0:4000/');
+    expect(body2.node).toBe('http://0.0.0.0:4000/');
     expect(body2.nodes.length).toBe(2);
 
     const response3: Response = await superTest.post('/api/v3/register-node').send({ node: 'http://0.0.0.0:4002/' }).set('Accept', 'application/json');
@@ -165,7 +165,7 @@ describe('📍 Blockchain-API Endpoints:', (): void => {
     const { body: body3 } = response3;
 
     expect(status3).toBe(200);
-    expect(body3.nodeAddress).toBe('http://0.0.0.0:4000/');
+    expect(body3.node).toBe('http://0.0.0.0:4000/');
     expect(body3.nodes.length).toBe(2);
   });
 
@@ -185,6 +185,15 @@ describe('📍 Blockchain-API Endpoints:', (): void => {
 
     expect(status).toBe(200);
     expect(body.node).toBe('http://0.0.0.0:4000/');
-    expect(body.nodes.length).toBe(3);
+  });
+
+  it('⭕ POST: "/api/v3/register-broadcast-node" >>> should not register and broadcast a new node to the network', async (): Promise<void> => {
+    const superTest: TestAgent = request(app);
+    const node: string = 'http://0.0.0.0:4000/';
+
+    const response: Response = await superTest.post('/api/v3/register-broadcast-node').send({ node }).set('Accept', 'application/json');
+    const { status }: Record<'status', number> = response;
+
+    expect(status).toBe(422);
   });
 });

@@ -20,7 +20,6 @@ export let blockchain: Blockchain<number>;
 app.use(expressStatusMonitor());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-
 app.use(expressWinston.logger({
   transports: [
     new transports.Console()
@@ -34,13 +33,13 @@ app.use(expressWinston.logger({
   expressFormat: true,
   colorize: true
 }));
-
+app.use('/explorer', express.static(__dirname + '/'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 app.use('/api/v3', getRoutes);
 app.use('/api/v3', postRoutes);
 
 app.get('/', (req: Request, res: Response): void => {
-  res.redirect(301, '/api-docs');
+  res.redirect(301, '/explorer');
 });
 
 const server: Server = app.listen(port, '0.0.0.0', 0,(): void => {

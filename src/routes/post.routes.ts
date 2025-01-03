@@ -46,8 +46,49 @@ router.post('/connect', (req: Request, res: Response): void => {
   }
 });
 
+router.post('/transaction', (req: Request, res: Response): void => {
+  const { body }: { body: Record<'transaction', Transaction<number>> } = req;
+  const { transaction }: Record<'transaction', Transaction<number>> = body;
+
+  res.send({
+    message: 'xxxx',
+    transaction
+  });
+});
+
+router.post('/transaction/broadcast', (req: Request, res: Response): void => {
+  const { body }: { body: Record<'transaction', Transaction<number>> } = req;
+  const { transaction }: Record<'transaction', Transaction<number>> = body;
+  const newTransaction: Transaction<number> = blockchain.createTransaction(transaction.sender, transaction.receiver, transaction.amount);
+  const addNewTransactionReturn: AddTransactionReturn<number> = blockchain.addNewTransaction(newTransaction);
+  const axiosObservableList: Observable<AxiosResponse>[] = [];
+  const axiosObservable$: Observable<any> = forkJoin(axiosObservableList);
+
+  blockchain.networkNodes.forEach(async (node: string) => {
+    const { transaction }: { transaction: Transaction<number> } = addNewTransactionReturn;
+    const data: Record<'transaction', Transaction<number>> = { transaction };
+    const axiosPromise: Promise<AxiosResponse> = axios.post(`${node}api/v3/transaction`, data);
+    axiosObservableList.push(from<Promise<AxiosResponse>>(axiosPromise));
+
+    console.log(`${node}}api/v3/transaction`);
+  });
+
+  axiosObservable$.subscribe((res: AxiosResponse<Record<'transaction', Transaction<number>>, {message: string; transaction: Transaction<number>}>) => {
+    console.log(res.data);
+  });
+
+  res.send({
+    message: 'This transaction will be added to:',
+    block: addNewTransactionReturn.index,
+    transaction: addNewTransactionReturn.transaction,
+    position: addNewTransactionReturn.position
+  });
+
+});
+
 router.post('/add-transaction', (req: Request, res: Response): void => {
-  const transaction: Transaction<number> = req.body.transaction;
+  const { body }: { body: Record<'transaction', Transaction<number>> } = req;
+  const { transaction }: Record<'transaction', Transaction<number>> = body;
   const newTransaction: AddTransactionReturn<number> = blockchain.addTransaction(transaction.sender, transaction.receiver, transaction.amount);
 
   res.send({
@@ -85,7 +126,8 @@ router.post('/register-broadcast-node', async (req: Request, res: Response): Pro
 
     for (const networkNode of nodes) {
       const data: Record<'node', string> = { node: href };
-      const axiosPromise: Promise<AxiosResponse<{ message: string; node: string; }, Record<'node', string> >> = axios.post(`${networkNode}api/v3/register-node`, data);
+      const axiosPromise: Promise<AxiosResponse<{ message: string; node: string; }, Record<'node', string> >> =
+        axios.post(`${networkNode}api/v3/register-node`, data);
 
       axiosObservableList.push(from<Promise<AxiosResponse<{ message: string; node: string; }, Record<'node', string>>>>(axiosPromise));
     }
@@ -110,7 +152,7 @@ router.post('/register-broadcast-node', async (req: Request, res: Response): Pro
               res.send({
                 message: `New node registered with network successfully.: ${responseNode}`,
                 networkNodes: [...nodes],
-                nodeAddress: Blockchain.nodeAddress
+                nodeAddress: blockchain.networkNode
               });
             }
           })
@@ -123,7 +165,7 @@ router.post('/register-broadcast-node', async (req: Request, res: Response): Pro
       message: `Node registration ${node} with the network failed.`,
       node,
       networkNodes: [...blockchain.networkNodes],
-      nodeAddress: Blockchain.nodeAddress
+      networkNode: blockchain.networkNode
     });
   }
 });

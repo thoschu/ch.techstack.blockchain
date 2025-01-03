@@ -1,5 +1,6 @@
-import { config } from "dotenv";
+import 'module-alias/register';
+import { config } from 'dotenv';
 
 config();
 
-import "./src/main";
+import '@app/main';

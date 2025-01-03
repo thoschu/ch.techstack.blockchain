@@ -1,7 +1,7 @@
 import { v7 as UUIDv7 } from 'uuid';
 
 export class Transaction<T> {
-  private readonly _id: string = UUIDv7();
+  private readonly _id: string = UUIDv7().split('-').join('');
   private readonly _sender: string;
   private readonly _receiver: string;
   private readonly _amount: T;

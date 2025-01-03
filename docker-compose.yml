@@ -1,1 +1,15 @@
-# ToDo
+services:
+  blockchain:
+    build: .
+    container_name: "blockchain"
+    ports:
+      - "4000:4000"
+    develop:
+      watch:
+        - action: sync
+          path: ./
+          target: /src
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
