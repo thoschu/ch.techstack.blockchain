@@ -1,7 +1,7 @@
 import { BinaryLike, createHash, generateKeyPairSync } from 'crypto';
 import axios, { AxiosResponse } from 'axios';
 import {
-  add, and, clone, equals,
+  add, and, clone, dec, equals,
   gt, head, inc,
   isNotEmpty, last, length,
   multiply, not, nth, prop,
@@ -65,6 +65,10 @@ export class Blockchain<T> {
 
   public get chain(): Block<T>[] {
     return this._chain;
+  }
+  public set chain(chain: Block<T>[]) {
+    this._chain.length = 0;
+    this._chain.push(...chain);
   }
 
   public get transactions(): Transaction<T>[] {
@@ -159,20 +163,6 @@ export class Blockchain<T> {
     };
   }
 
-  public addTransaction(sender: string, receiver: string, amount: T): AddTransactionReturn<T> {
-    const transaction: Transaction<T> = this.createTransaction(sender, receiver, amount);
-    const position: number = this._transactions.push(transaction);
-    const previousBlock: Block<T> = this.getPreviousBlock();
-    const previousBlockIndex: number = prop<'index', Block<T>>('index', previousBlock);
-    const index: number = inc(previousBlockIndex);
-
-    return {
-      transaction,
-      position,
-      index
-    };
-  }
-
   public addValidator(address: string, stake: number): void {
     this._validators.push({ address, stake });
   }
@@ -224,12 +214,6 @@ export class Blockchain<T> {
     return nonce;
   }
 
-  // public hash(block: Block<T>): string {
-  //   const encodedBlock: string = toString<Block<T>>(block);
-  //
-  //   return this.getSHA256(encodedBlock);
-  // }
-
   public hashBlock(previousHash: string, blockData: BlockData<T>, nonce: number): string {
     const encodedBlock: string = previousHash.concat(toString<BlockData<T>>(blockData)).concat(toString<number>(nonce));
 
@@ -239,6 +223,42 @@ export class Blockchain<T> {
   public getSHA256(data: BinaryLike): string {
     return createHash('sha256').update(data).digest('hex');
   }
+
+  public chainIsValid(chain: ReadonlyArray<Block<T>>): boolean {
+    const genesisBlock: Block<T> = head<Block<T>>(chain)!;
+    const { index }: Record<'index', number> = genesisBlock;
+    const { nonce }: Record<'nonce', number>  = genesisBlock;
+    const { previousHash }: Record<'previousHash', string>  = genesisBlock;
+    const { transactions }: Record<'transactions', Transaction<T>[]>  = genesisBlock;
+    const indexIsOne: boolean = equals<number>(index, 1);
+    const nonceIsNegativeOne: boolean = equals<number>(nonce, -1);
+    const previousHashIsZero: boolean = equals<string>(previousHash, '0'.repeat(this.difficulty));
+    const transactionsLengthIsZero: boolean = equals<number>(length<Transaction<T>[]>(transactions), 0);
+    const indexIsOneAndNonceIsNegativeOne: boolean = and<boolean, boolean>(indexIsOne, nonceIsNegativeOne);
+    const previousHashIsZeroAndTransactionsLengthIsZero: boolean = and<boolean, boolean>(previousHashIsZero, transactionsLengthIsZero);
+    const genesisBlockIsValid: boolean = and<boolean, boolean>(indexIsOneAndNonceIsNegativeOne, previousHashIsZeroAndTransactionsLengthIsZero);
+    let chainIsValid: boolean = true;
+
+    for(let i = 1; i < chain.length; i++) {
+      const decI: number = dec(i);
+      const previousBlock: Block<T> = chain[decI];
+      const currentBlock: Block<T> = chain[i];
+      const previousBlockHash: string = previousBlock.hash;
+      const currentBlockPreviousHash: string = currentBlock.previousHash;
+      const { transactions }: Record<'transactions', Transaction<T>[]> = currentBlock;
+      const { index }: Record<'index', number> = currentBlock
+      const currentBlockNonce: number = currentBlock.nonce;
+      const blockData: BlockData<T>= { transactions, index };
+      const blockHash: string = this.hashBlock(previousBlockHash, blockData, currentBlockNonce);
+      const target: string = '0'.repeat(this.difficulty);
+      const isNotTarget: boolean = not(equals<string>(blockHash.substring(0, this.difficulty), target));
+      const isHashesNotValid: boolean = not(equals<string>(currentBlockPreviousHash, previousBlockHash));
+
+      if(and<boolean, boolean>(isNotTarget, isHashesNotValid)) chainIsValid = false;
+    }
+
+    return and<boolean, boolean>(chainIsValid, genesisBlockIsValid);
+  };
 
   public isChainValid(chain: ReadonlyArray<Block<T>>): boolean {
     let previousBlock: Block<T> = head<Block<T>>(chain)!;
@@ -271,7 +291,8 @@ export class Blockchain<T> {
   }
 
   private createGenesisBlock(): Block<T> {
-    const previousHash: string = '0000';
+    const zero: string = '0';
+    const previousHash: string = zero.repeat(this.difficulty);
     const index: number = 1;
     const transactions: Transaction<T>[] = this.transactions;
     const blockData: BlockData<T> = { transactions, index };

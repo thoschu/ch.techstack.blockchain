@@ -2,12 +2,15 @@ import { ECDH, randomBytes, createECDH, createHash } from 'crypto';
 import { env } from 'process';
 import bs58 from 'bs58';
 import { Router, Request, Response } from 'express';
-import { inc, prop } from 'ramda';
+import { forkJoin, from, Observable } from 'rxjs';
+import {all, equals, length, inc, prop, reduce, and, gt} from 'ramda';
+import axios, { AxiosResponse } from 'axios';
 
 import { blockchain } from '@app/main';
 import Block from '@blockchain/block/block.class';
 import { Transaction } from '@blockchain/transaction/transaction.class';
 import { Blockchain, BlockData } from '@blockchain/blockchain.class';
+
 
 const apiKey: string  = env.API_KEY!;
 
@@ -149,7 +152,7 @@ router.get('/get-blockchain', (req: Request, res: Response): void => {
  *                   example: 5
  */
 router.get('/is-valid', (req: Request, res: Response): void => {
-  const isValid: boolean = blockchain.isChainValid(blockchain.chain);
+  const isValid: boolean = blockchain.chainIsValid(blockchain.chain);
 
   res.send({
     'message': isValid ? 'The blockchain is valid! ✅' : 'The blockchain is not valid! ❌',
@@ -256,20 +259,56 @@ router.get('/get-nodes', (req: Request, res: Response): void => {
 });
 
 router.get('/mine', (req: Request, res: Response): void => {
-  blockchain.addTransaction('system', Blockchain.nodeAddress, 1);
-
   const previousBlock: Block<number> = blockchain.getPreviousBlock();
   const previousHash: string = prop<'hash', Block<number>>('hash', previousBlock);
-  const transactions: Transaction<number>[] = blockchain.transactions;
+  const { transactions }: Record<'transactions', Transaction<number>[]> = blockchain;
   const index: number = inc(prop<'index', Block<number>>('index', previousBlock));
   const blockData: BlockData<number> = { transactions, index };
   const nonce: number = blockchain.proofOfWork(previousHash, blockData);
   const hash: string = blockchain.hashBlock(previousHash, blockData, nonce);
   const block: Block<number> = blockchain.createBlock(nonce, previousHash, hash);
+  const data: Record<'block', Block<number>> = { block };
+  const axiosObservableList: Observable<AxiosResponse>[] = [];
+  const { networkNodes: nodes }: Record<'networkNodes', Set<string>> = blockchain;
+  const axiosObservable$: Observable<AxiosResponse[]> = forkJoin<AxiosResponse[]>(axiosObservableList);
 
-  res.send({
-    'message': 'Congratulations, you just mined a new block successfully.',
-    'block': block
+  for (const networkNode of nodes) {
+    const axiosPostPromise: Promise<AxiosResponse> = axios.post(`${networkNode}api/v3/receive-new-block`, data);
+
+    axiosObservableList.push(from<Promise<AxiosResponse>>(axiosPostPromise));
+  }
+
+  axiosObservable$.subscribe((responses: AxiosResponse[]): void => {
+    const responseMapStatus: number[] = responses.map<number>((value: AxiosResponse): number => value.status);
+    const httpStatusCodeOk: number = 200;
+    const equals200: (eq: number) => boolean = equals<number>(httpStatusCodeOk);
+    const receiveNewBlockPostIsValidStatus: boolean = all<number>(equals200)(responseMapStatus);
+
+    if(receiveNewBlockPostIsValidStatus) {
+      const { networkNode }: Record<'networkNode', string> = blockchain;
+      const transaction: Transaction<number> = blockchain.createTransaction('system', Blockchain.nodeAddress, 1);
+      const { sender, receiver, amount }: { sender: string; receiver: string; amount: number; } = transaction;
+      const data: { transaction: { sender: string ; receiver: string ; amount: number; } } = { transaction: { sender, receiver, amount } };
+      const axiosPromise: Promise<AxiosResponse> = axios.post(`${networkNode}api/v3/transaction/broadcast`, data);
+
+      axiosPromise.then((response: AxiosResponse): void => {
+        res.status(response.status).send({
+          message: 'New block mined & broadcast successfully',
+          block
+        });
+      }).catch((error: Error): void => {
+        res.status(500).send({
+          'message': 'Error, the block was not broadcast to the network.',
+          block,
+          error
+        });
+      });
+    } else {
+      res.status(500).send({
+        'message': 'Error, the block was not broadcast to the network.',
+        block
+      });
+    }
   });
 });
 
@@ -316,6 +355,56 @@ router.get('/create-blockchain-address', async (req: Request, res: Response): Pr
   const address: string = bs58.encode(Buffer.concat([versionedPayload, checksum]));
 
   res.send(address);
+});
+
+router.get('/consensus', (req: Request, res: Response): void => {
+  const nodes: string[] = [...blockchain.networkNodes];
+  const axiosObservableList: Observable<AxiosResponse>[] = [];
+  const axiosObservable$: Observable<AxiosResponse[]> = forkJoin<AxiosResponse[]>(axiosObservableList);
+
+  for (const networkNode of nodes) {
+    const axiosGetPromise: Promise<AxiosResponse> = axios.get(`${networkNode}api/v3/get-blockchain`);
+
+    axiosObservableList.push(from<Promise<AxiosResponse>>(axiosGetPromise));
+  }
+
+  axiosObservable$.subscribe((responses: AxiosResponse[]): void => {
+    const responseMapStatus: number[] = responses.map<number>((value: AxiosResponse): number => value.status);
+    const httpStatusCodeOk: number = 200;
+    const equals200: (eq: number) => boolean = equals<number>(httpStatusCodeOk);
+    const receiveNewBlockPostIsValidStatus: boolean = all<number>(equals200)(responseMapStatus);
+    if(receiveNewBlockPostIsValidStatus) {
+      const responseMapData: Record<'blockchain', Blockchain<number>>[] = responses.map((value: AxiosResponse) => value.data);
+      const { chain: chainLocale }: Record<'chain', Block<number>[]> = blockchain;
+      const { length: currentChainLengthLocale }: Record<'length', number> = chainLocale;
+      let maxChainLength: number = currentChainLengthLocale;
+      let newLongestChain: Block<number>[] = [];
+      let newPendingTransactions: Transaction<number>[] = [];
+
+      console.log('###################');
+      for (const responseMapDataElement of responseMapData) {
+        const { blockchain: blockchainRemote }: Record<'blockchain', Blockchain<number>> = responseMapDataElement;
+        const { chain: chainRemote }: Record<'chain', Block<number>[]> = blockchainRemote;
+        const { length: chainLengthRemote }: Record<'length', number> = chainRemote;
+        const { transactions: transactionsRemote }: Record<'transactions', Transaction<number>[]> = blockchainRemote;
+        const { length: transactionsRemoteLength }: Record<'length', number> = transactionsRemote;
+
+
+        const { transactions: transactionsLocale }: Record<'transactions', Transaction<number>[]> = blockchain;
+        const { length: transactionsLocaleLength }: Record<'length', number> = transactionsLocale;
+
+        console.log();
+      }
+
+      // const responseMapDataChains: Blockchain<number>[] = responseMapData.map((value: Record<'blockchain', Blockchain<number>>) => value.blockchain);
+      // const chains: Block<number>[][] = responseMapDataChains.map((blockchain: Blockchain<number>)=> blockchain.chain);
+      // const transactionsList: Transaction<number>[][] = responseMapDataChains.map((blockchain: Blockchain<number>)=> blockchain.transactions);
+      // const numberOfElementsResponse: number = chains.length;
+      // const numberOfElementsNodes: number = nodes.length;
+    } else {
+      res.status(500).send({ '#': 'NOPE', nodes });
+    }
+  });
 });
 
 export default router;

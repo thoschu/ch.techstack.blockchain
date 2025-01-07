@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { all, and, equals, is, isEmpty, length, not, prop } from 'ramda';
+import {all, and, equals, inc, is, isEmpty, length, not, prop} from 'ramda';
 import axios, { AxiosResponse } from 'axios';
-import { forkJoin, from, Observable, Subscription } from 'rxjs';
+import { forkJoin, from, Observable } from 'rxjs';
 
 import { blockchain } from '@app/main';
 import { Transaction } from '@blockchain/transaction/transaction.class';
 import { AddTransactionReturn, Blockchain } from '@blockchain/blockchain.class';
+import Block from "@blockchain/block/block.class";
 
 const router: Router = Router();
 
@@ -48,53 +49,60 @@ router.post('/connect', (req: Request, res: Response): void => {
 
 router.post('/transaction', (req: Request, res: Response): void => {
   const { body }: { body: Record<'transaction', Transaction<number>> } = req;
-  const { transaction }: Record<'transaction', Transaction<number>> = body;
+  const { transaction: tx }: Record<'transaction', Transaction<number>> = body;
+  const addTxReturn: AddTransactionReturn<number> = blockchain.addNewTransaction(tx);
+  const message: string = 'Transaction will be added to block:';
+  const { index, transaction, position }: Record<'index', number> & Record<'transaction', Transaction<number>> & Record<'position', number> = addTxReturn;
 
-  res.send({
-    message: 'xxxx',
-    transaction
-  });
+  res.send({ message, index, transaction, position });
 });
 
-router.post('/transaction/broadcast', (req: Request, res: Response): void => {
+router.post('/transaction/broadcast', (req: Request, response: Response): void => {
   const { body }: { body: Record<'transaction', Transaction<number>> } = req;
   const { transaction }: Record<'transaction', Transaction<number>> = body;
   const newTransaction: Transaction<number> = blockchain.createTransaction(transaction.sender, transaction.receiver, transaction.amount);
   const addNewTransactionReturn: AddTransactionReturn<number> = blockchain.addNewTransaction(newTransaction);
-  const axiosObservableList: Observable<AxiosResponse>[] = [];
-  const axiosObservable$: Observable<any> = forkJoin(axiosObservableList);
+  const axiosObservableList: Observable<AxiosResponse<{message: string; transaction: Transaction<number>}>>[] = [];
+  const axiosObservable$: Observable<AxiosResponse<{ message: string; transaction: Transaction<number> }, Record<'transaction', Transaction<number>>>[]> =
+    forkJoin<AxiosResponse<{ message: string; transaction: Transaction<number> }, Record<'transaction', Transaction<number>>>[]>(axiosObservableList);
 
-  blockchain.networkNodes.forEach(async (node: string) => {
+  blockchain.networkNodes.forEach(async (node: string): Promise<void> => {
     const { transaction }: { transaction: Transaction<number> } = addNewTransactionReturn;
     const data: Record<'transaction', Transaction<number>> = { transaction };
-    const axiosPromise: Promise<AxiosResponse> = axios.post(`${node}api/v3/transaction`, data);
-    axiosObservableList.push(from<Promise<AxiosResponse>>(axiosPromise));
+    const axiosPromise: Promise<AxiosResponse> =
+      axios.post<Record<'transaction', Transaction<number>>, AxiosResponse<{message: string; index: number; position: number; transaction: Transaction<number>}>>(`${node}api/v3/transaction`, data);
 
-    console.log(`${node}}api/v3/transaction`);
+    axiosObservableList.push(from<Promise<AxiosResponse<{message: string; index: number; position: number; transaction: Transaction<number>}>>>(axiosPromise));
   });
 
-  axiosObservable$.subscribe((res: AxiosResponse<Record<'transaction', Transaction<number>>, {message: string; transaction: Transaction<number>}>) => {
-    console.log(res.data);
-  });
+  axiosObservable$.subscribe((res: AxiosResponse<{ message: string; transaction: Transaction<number> }, Record<'transaction', Transaction<number>>>[]): void => {
+    const responseMapStatus: number[] = res.map<number>((value: AxiosResponse): number => value.status);
+    const responseMapData: Transaction<number>[] = res.map((value: AxiosResponse) => value.data.transaction);
+    const httpStatusCodeOk: number = 200;
+    const equals200: (eq: number) => boolean = equals<number>(httpStatusCodeOk);
+    const equalsTransaction: (b: Transaction<number>) => boolean = equals<Transaction<number>>(newTransaction);
+    const isResponseMapStatusAllEquals200: boolean = all<number>(equals200)(responseMapStatus);
+    const isResponseMapDataAllEqualsTransaction: boolean = all<Transaction<number>>(equalsTransaction)(responseMapData);
+    const isRegisterNodePostValid: boolean = and<boolean, boolean>(isResponseMapStatusAllEquals200, isResponseMapDataAllEqualsTransaction);
+    const { index }: Record<'index', number> = addNewTransactionReturn;
+    const { transaction }: Record<'transaction', Transaction<number>> = addNewTransactionReturn;
+    const { position }: Record<'position', number> = addNewTransactionReturn;
+    let responseUpdate: Response, message: string;
 
-  res.send({
-    message: 'This transaction will be added to:',
-    block: addNewTransactionReturn.index,
-    transaction: addNewTransactionReturn.transaction,
-    position: addNewTransactionReturn.position
-  });
+    if(isRegisterNodePostValid) {
+      responseUpdate = response.status(201);
+      message = 'Transaction created and broadcast successfully.';
+    } else {
+      responseUpdate = response.status(500);
+      message = 'A failure occurred:';
+    }
 
-});
-
-router.post('/add-transaction', (req: Request, res: Response): void => {
-  const { body }: { body: Record<'transaction', Transaction<number>> } = req;
-  const { transaction }: Record<'transaction', Transaction<number>> = body;
-  const newTransaction: AddTransactionReturn<number> = blockchain.addTransaction(transaction.sender, transaction.receiver, transaction.amount);
-
-  res.send({
-    message: 'This transaction will be added to:',
-    block: newTransaction.index,
-    transaction: newTransaction.transaction,
+    responseUpdate.send({
+      message,
+      index,
+      transaction,
+      position
+    });
   });
 });
 
@@ -202,6 +210,36 @@ router.post('/register-nodes-bulk', (req: Request, res: Response): void => {
     message: 'Bulk registration successful.',
     node: networkNode
   });
+});
+
+router.post('/receive-new-block', (req: Request, res: Response): void => {
+  const { body }: { body: Record<'block', Block<number>> } = req;
+  const { block }: Record<'block', Block<number>> = body;
+  const lastBlock: Block<number> = blockchain.getPreviousBlock();
+  const lastBlockHash: string = lastBlock.hash;
+  const previousBlockHash: string = block.previousHash;
+  const correctHash: boolean = equals<string>(lastBlockHash, previousBlockHash);
+  const { index: blockIndex }: Record<'index', number> = block;
+  const { index: lastBlockIndex }: Record<'index', number> = lastBlock;
+  const lastBlockIndexInc: number = inc(lastBlockIndex);
+  const correctIndex: boolean = equals<number>(lastBlockIndexInc, blockIndex);
+  const { networkNode }: { networkNode: string } = blockchain;
+
+  if(and<boolean, boolean>(correctHash, correctIndex)) {
+    const index: number = blockchain.chain.push(block);
+
+    blockchain.transactions.length = 0;
+
+    res.send({
+      message: 'New block received and accepted.',
+      block, index, networkNode
+    });
+  } else {
+    res.status(500).send({
+      message: 'New block rejected.',
+      block, networkNode
+    });
+  }
 });
 
 export default router;

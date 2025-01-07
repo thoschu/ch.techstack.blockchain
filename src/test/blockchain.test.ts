@@ -18,6 +18,8 @@ beforeEach((): void => {
 });
 
 describe('📍 Blockchain', (): void => {
+  const by: string = blockchain.networkNode;
+
   test('⭕  init and create Genesis-Block', (): void => {
     expect(blockchain.chain.length).toBe(1);
     expect(blockchain.transactions.length).toBe(0);
@@ -47,50 +49,50 @@ describe('📍 Blockchain', (): void => {
     expect(blockchain.chain.length).toBe(7);
   });
 
-  test('❗ addTransaction(sender: string, receiver: string, amount: T): { transaction: Transaction<T>; position: number; index: number }', (): void => {
-    const from: string = 'Tom S.';
-    const to: string = 'John D.';
-    const value: number = 10;
-    let tx: { transaction: Transaction<number>; position: number; index: number; } = blockchain.addTransaction(from, to, value);
-    const transaction: Transaction<number> = tx.transaction;
-    const uuidVersion: UUIDVersion = 7;
-
-    expect(transaction).toBeInstanceOf(Transaction<number>);
-    expect(isUUID(transaction.id, uuidVersion)).toBe(true);
-    expect(transaction.sender).toBe(from);
-    expect(transaction.receiver).toBe(to);
-    expect(transaction.amount).toBe(value);
-    expect(transaction.contract).toBe(undefined);
-    expect(tx.position).toBe(1);
-    expect(tx.index).toBe(2);
-    expect(blockchain.transactions.length).toBe(1);
-
-    tx = blockchain.addTransaction(from, to, value * value);
-
-    expect(blockchain.transactions.length).toBe(2);
-
-    let block: Block<number> = blockchain.createBlock(0, '0000', createHash('sha256').update('a').digest('hex'));
-
-    expect(blockchain.transactions.length).toBe(0);
-    expect(block.transactions.length).toBe(2);
-    expect(block.transactions[1]).toStrictEqual(tx.transaction);
-
-    blockchain.addTransaction(from, to, value + 1);
-    blockchain.addTransaction(from, to, value + 2);
-    blockchain.addTransaction(from, to, value + 3);
-    tx = blockchain.addTransaction(from, to, value + 4);
-
-    expect(blockchain.transactions.length).toBe(4);
-    expect(blockchain.transactions[3]).toStrictEqual(tx.transaction);
-    expect(blockchain.chain.length).toBe(2);
-
-    block = blockchain.createBlock(0, '0000', createHash('sha256').update('a').digest('hex'));
-
-    expect(blockchain.transactions.length).toBe(0);
-    expect(blockchain.chain.length).toBe(3);
-    expect(block.transactions.length).toBe(4);
-    expect(last<Transaction<number>>(block.transactions)).toStrictEqual(tx.transaction);
-  });
+  // test('❗ addTransaction(sender: string, receiver: string, amount: T): { transaction: Transaction<T>; position: number; index: number }', (): void => {
+  //   const from: string = 'Tom S.';
+  //   const to: string = 'John D.';
+  //   const value: number = 10;
+  //   let tx: { transaction: Transaction<number>; position: number; index: number; } = blockchain.addTransaction(from, to, value);
+  //   const transaction: Transaction<number> = tx.transaction;
+  //   const uuidVersion: UUIDVersion = 7;
+  //
+  //   expect(transaction).toBeInstanceOf(Transaction<number>);
+  //   expect(isUUID(transaction.id, uuidVersion)).toBe(true);
+  //   expect(transaction.sender).toBe(from);
+  //   expect(transaction.receiver).toBe(to);
+  //   expect(transaction.amount).toBe(value);
+  //   expect(transaction.contract).toBe(undefined);
+  //   expect(tx.position).toBe(1);
+  //   expect(tx.index).toBe(2);
+  //   expect(blockchain.transactions.length).toBe(1);
+  //
+  //   tx = blockchain.addTransaction(from, to, value * value);
+  //
+  //   expect(blockchain.transactions.length).toBe(2);
+  //
+  //   let block: Block<number> = blockchain.createBlock(0, '0000', createHash('sha256').update('a').digest('hex'));
+  //
+  //   expect(blockchain.transactions.length).toBe(0);
+  //   expect(block.transactions.length).toBe(2);
+  //   expect(block.transactions[1]).toStrictEqual(tx.transaction);
+  //
+  //   blockchain.addTransaction(from, to, value + 1);
+  //   blockchain.addTransaction(from, to, value + 2);
+  //   blockchain.addTransaction(from, to, value + 3);
+  //   tx = blockchain.addTransaction(from, to, value + 4);
+  //
+  //   expect(blockchain.transactions.length).toBe(4);
+  //   expect(blockchain.transactions[3]).toStrictEqual(tx.transaction);
+  //   expect(blockchain.chain.length).toBe(2);
+  //
+  //   block = blockchain.createBlock(0, '0000', createHash('sha256').update('a').digest('hex'));
+  //
+  //   expect(blockchain.transactions.length).toBe(0);
+  //   expect(blockchain.chain.length).toBe(3);
+  //   expect(block.transactions.length).toBe(4);
+  //   expect(last<Transaction<number>>(block.transactions)).toStrictEqual(tx.transaction);
+  // });
 
   test('❗ hashBlock(previousHash: string, blockData: ReadonlyArray<Transaction<T>>, nonce: number): string', (): void => {
     const { previousHash }: Record<'previousHash', string> = blockchain.getPreviousBlock();

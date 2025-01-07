@@ -196,4 +196,8 @@ describe('📍 Blockchain-API Endpoints:', (): void => {
 
     expect(status).toBe(422);
   });
+
+  // ToDo '/transaction/broadcast'
+
+  // ToDo '/transaction/'
 });
