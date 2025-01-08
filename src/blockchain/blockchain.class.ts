@@ -74,6 +74,10 @@ export class Blockchain<T> {
   public get transactions(): Transaction<T>[] {
     return this._transactions;
   }
+  public set transactions(transactions: Transaction<T>[]) {
+    this._transactions.length = 0;
+    this.transactions.push(...transactions);
+  }
 
   public get id(): string {
     return this._id;

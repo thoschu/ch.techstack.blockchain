@@ -373,34 +373,44 @@ router.get('/consensus', (req: Request, res: Response): void => {
     const httpStatusCodeOk: number = 200;
     const equals200: (eq: number) => boolean = equals<number>(httpStatusCodeOk);
     const receiveNewBlockPostIsValidStatus: boolean = all<number>(equals200)(responseMapStatus);
+
     if(receiveNewBlockPostIsValidStatus) {
       const responseMapData: Record<'blockchain', Blockchain<number>>[] = responses.map((value: AxiosResponse) => value.data);
       const { chain: chainLocale }: Record<'chain', Block<number>[]> = blockchain;
       const { length: currentChainLengthLocale }: Record<'length', number> = chainLocale;
       let maxChainLength: number = currentChainLengthLocale;
-      let newLongestChain: Block<number>[] = [];
-      let newPendingTransactions: Transaction<number>[] = [];
+      let newLongestChain: Block<number>[] | null = null;
+      let newPendingTransactions: Transaction<number>[] | null = null;
 
       console.log('###################');
+
       for (const responseMapDataElement of responseMapData) {
         const { blockchain: blockchainRemote }: Record<'blockchain', Blockchain<number>> = responseMapDataElement;
         const { chain: chainRemote }: Record<'chain', Block<number>[]> = blockchainRemote;
         const { length: chainLengthRemote }: Record<'length', number> = chainRemote;
         const { transactions: transactionsRemote }: Record<'transactions', Transaction<number>[]> = blockchainRemote;
-        const { length: transactionsRemoteLength }: Record<'length', number> = transactionsRemote;
 
-
-        const { transactions: transactionsLocale }: Record<'transactions', Transaction<number>[]> = blockchain;
-        const { length: transactionsLocaleLength }: Record<'length', number> = transactionsLocale;
-
-        console.log();
+        if(chainLengthRemote > maxChainLength) {
+          maxChainLength = chainLengthRemote;
+          newLongestChain = chainRemote;
+          newPendingTransactions = transactionsRemote;
+        }
       }
 
-      // const responseMapDataChains: Blockchain<number>[] = responseMapData.map((value: Record<'blockchain', Blockchain<number>>) => value.blockchain);
-      // const chains: Block<number>[][] = responseMapDataChains.map((blockchain: Blockchain<number>)=> blockchain.chain);
-      // const transactionsList: Transaction<number>[][] = responseMapDataChains.map((blockchain: Blockchain<number>)=> blockchain.transactions);
-      // const numberOfElementsResponse: number = chains.length;
-      // const numberOfElementsNodes: number = nodes.length;
+      if(!newLongestChain || (newLongestChain && !blockchain.chainIsValid(newLongestChain))) {
+        res.send({
+          message: 'Current chain has not been replaced',
+          chain: chainLocale
+        });
+      } else if (newLongestChain && blockchain.chainIsValid(newLongestChain)) {
+        blockchain.chain = newLongestChain;
+        blockchain.transactions = newPendingTransactions!;
+
+        res.send({
+          message: 'This chain has been replaced',
+          chain: chainLocale
+        });
+      }
     } else {
       res.status(500).send({ '#': 'NOPE', nodes });
     }
