@@ -4,7 +4,7 @@ import bs58 from 'bs58';
 import { Router, Request, Response } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { forkJoin, from, Observable } from 'rxjs';
-import {all, equals, length, inc, prop, reduce, and, gt} from 'ramda';
+import {all, equals, inc, prop } from 'ramda';
 import axios, { AxiosResponse } from 'axios';
 
 import { blockchain } from '@app/main';
@@ -16,39 +16,6 @@ const apiKey: string  = env.API_KEY!;
 
 const router: Router = Router();
 
-/**
- * @swagger
- * /info:
- *   get:
- *     summary: Fetch blockchain tickers information
- *     description: Retrieves data from the Blockchain.com exchange tickers API.
- *     tags:
- *       - Blockchain
- *     responses:
- *       200:
- *         description: A list of blockchain tickers with their latest information.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   symbol:
- *                     type: string
- *                     description: The trading pair symbol (e.g., ALGO-BTC).
- *                   price_24h:
- *                     type: number
- *                     description: The price of the trading pair in the last 24 hours.
- *                   volume_24h:
- *                     type: number
- *                     description: The volume of trades in the last 24 hours.
- *                   last_trade_price:
- *                     type: number
- *                     description: The price of the most recent trade.
- *       500:
- *         description: Server error while fetching data from the external API.
- */
 router.get('/info', async (req: Request, res: Response) => {
   const headers = {
     Accept: 'application/json',
@@ -66,50 +33,6 @@ router.get('/info', async (req: Request, res: Response) => {
   res.send(promRes);
 });
 
-/**
- * @swagger
- * /get-blockchain:
- *   get:
- *     summary: Get the current blockchain state
- *     description: Returns the current blockchain including its chain and pending transactions.
- *     tags:
- *       - Blockchain
- *     responses:
- *       200:
- *         description: Successfully retrieved the blockchain.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 blockchain:
- *                   type: object
- *                   properties:
- *                     chain:
- *                       type: object
- *                       properties:
- *                         items:
- *                           type: array
- *                           items:
- *                             type: object
- *                             description: A block in the blockchain.
- *                         length:
- *                           type: integer
- *                           description: Total number of blocks in the chain.
- *                     transactions:
- *                       type: object
- *                       properties:
- *                         items:
- *                           type: array
- *                           items:
- *                             type: object
- *                             description: A pending transaction in the blockchain.
- *                         length:
- *                           type: integer
- *                           description: Total number of pending transactions.
- *       500:
- *         description: Internal server error.
- */
 router.get('/get-blockchain', (req: Request, res: Response): void => {
   res.send({
     blockchain: {
@@ -126,31 +49,6 @@ router.get('/get-blockchain', (req: Request, res: Response): void => {
   });
 });
 
-/**
- * @swagger
- * /is-valid:
- *   get:
- *     summary: Überprüft die Gültigkeit der Blockchain
- *     description: Prüft, ob die Blockchain gültig ist und gibt die Anzahl der Blöcke zurück.
- *     tags:
- *       - Blockchain
- *     responses:
- *       200:
- *         description: Ergebnis der Blockchain-Validitätsprüfung.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   description: Status der Blockchain-Validität.
- *                   example: The blockchain is valid! ✅
- *                 length:
- *                   type: integer
- *                   description: Die Anzahl der Blöcke in der Blockchain.
- *                   example: 5
- */
 router.get('/is-valid', (req: Request, res: Response): void => {
   const isValid: boolean = blockchain.chainIsValid(blockchain.chain);
 
@@ -160,82 +58,6 @@ router.get('/is-valid', (req: Request, res: Response): void => {
   });
 });
 
-/**
- * @swagger
- * /get-chain:
- *   get:
- *     summary: Gibt die gesamte Blockchain zurück
- *     description: Liefert die aktuelle Blockchain und die Anzahl der Blöcke.
- *     tags:
- *       - Blockchain
- *     responses:
- *       200:
- *         description: Erfolgreiche Rückgabe der Blockchain-Daten.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 length:
- *                   type: integer
- *                   description: Die Anzahl der Blöcke in der Blockchain.
- *                   example: 5
- *                 chain:
- *                   type: array
- *                   description: Die vollständige Blockchain.
- *                   items:
- *                     type: object
- *                     description: Ein einzelner Block in der Blockchain.
- *                     properties:
- *                       timestamp:
- *                         type: integer
- *                         description: Der Zeitstempel, wann der Block erstellt wurde (Unix-Timestamp).
- *                         example: 1672531200000
- *                       index:
- *                         type: integer
- *                         description: Die Position des Blocks in der Blockchain.
- *                         example: 1
- *                       proof:
- *                         type: integer
- *                         description: Der Proof-of-Work-Wert für diesen Block.
- *                         example: 12345
- *                       previousHash:
- *                         type: string
- *                         description: Der Hash des vorherigen Blocks.
- *                         example: "0000abc123..."
- *                       hash:
- *                         type: string
- *                         description: Der Hash dieses Blocks.
- *                         example: "0000def456..."
- *                       transactions:
- *                         type: array
- *                         description: Eine Liste von Transaktionen, die im Block enthalten sind.
- *                         items:
- *                           type: object
- *                           description: Eine einzelne Transaktion.
- *                           properties:
- *                             sender:
- *                               type: string
- *                               description: Der Absender der Transaktion.
- *                               example: "Alice"
- *                             receiver:
- *                               type: string
- *                               description: Der Empfänger der Transaktion.
- *                               example: "Bob"
- *                             amount:
- *                               type: number
- *                               description: Der Betrag der Transaktion.
- *                               example: 50
- *                       coinBase:
- *                         type: object
- *                         description: Eine spezielle Transaktion für Mining-Belohnungen (falls vorhanden).
- *                         nullable: true
- *                         example: { miner: "Miner123", reward: 12.5 }
- *                       data:
- *                         type: string
- *                         description: Zusätzliche Daten, die im Block gespeichert sind.
- *                         example: "Extra information"
- */
 router.get('/get-chain', (req: Request, res: Response): void => {
   res.send({
     'length': blockchain.chain.length,
