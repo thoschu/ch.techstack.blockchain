@@ -2,6 +2,7 @@ import { ECDH, randomBytes, createECDH, createHash } from 'crypto';
 import { env } from 'process';
 import bs58 from 'bs58';
 import { Router, Request, Response } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
 import { forkJoin, from, Observable } from 'rxjs';
 import {all, equals, length, inc, prop, reduce, and, gt} from 'ramda';
 import axios, { AxiosResponse } from 'axios';
@@ -10,7 +11,6 @@ import { blockchain } from '@app/main';
 import Block from '@blockchain/block/block.class';
 import { Transaction } from '@blockchain/transaction/transaction.class';
 import { Blockchain, BlockData } from '@blockchain/blockchain.class';
-
 
 const apiKey: string  = env.API_KEY!;
 
@@ -358,62 +358,105 @@ router.get('/create-blockchain-address', async (req: Request, res: Response): Pr
 });
 
 router.get('/consensus', (req: Request, res: Response): void => {
-  const nodes: string[] = [...blockchain.networkNodes];
-  const axiosObservableList: Observable<AxiosResponse>[] = [];
-  const axiosObservable$: Observable<AxiosResponse[]> = forkJoin<AxiosResponse[]>(axiosObservableList);
+  const networkNodes: string[] = [...blockchain.networkNodes];
 
-  for (const networkNode of nodes) {
-    const axiosGetPromise: Promise<AxiosResponse> = axios.get(`${networkNode}api/v3/get-blockchain`);
+  if(networkNodes.length !== 0) {
+    const axiosObservableList: Observable<AxiosResponse>[] = [];
+    const axiosObservable$: Observable<AxiosResponse[]> = forkJoin<AxiosResponse[]>(axiosObservableList);
 
-    axiosObservableList.push(from<Promise<AxiosResponse>>(axiosGetPromise));
-  }
+    for (const networkNode of networkNodes) {
+      const axiosGetPromise: Promise<AxiosResponse> = axios.get(`${networkNode}api/v3/get-blockchain`);
 
-  axiosObservable$.subscribe((responses: AxiosResponse[]): void => {
-    const responseMapStatus: number[] = responses.map<number>((value: AxiosResponse): number => value.status);
-    const httpStatusCodeOk: number = 200;
-    const equals200: (eq: number) => boolean = equals<number>(httpStatusCodeOk);
-    const receiveNewBlockPostIsValidStatus: boolean = all<number>(equals200)(responseMapStatus);
-
-    if(receiveNewBlockPostIsValidStatus) {
-      const responseMapData: Record<'blockchain', Blockchain<number>>[] = responses.map((value: AxiosResponse) => value.data);
-      const { chain: chainLocale }: Record<'chain', Block<number>[]> = blockchain;
-      const { length: currentChainLengthLocale }: Record<'length', number> = chainLocale;
-      let maxChainLength: number = currentChainLengthLocale;
-      let newLongestChain: Block<number>[] | null = null;
-      let newPendingTransactions: Transaction<number>[] | null = null;
-
-      console.log('###################');
-
-      for (const responseMapDataElement of responseMapData) {
-        const { blockchain: blockchainRemote }: Record<'blockchain', Blockchain<number>> = responseMapDataElement;
-        const { chain: chainRemote }: Record<'chain', Block<number>[]> = blockchainRemote;
-        const { length: chainLengthRemote }: Record<'length', number> = chainRemote;
-        const { transactions: transactionsRemote }: Record<'transactions', Transaction<number>[]> = blockchainRemote;
-
-        if(chainLengthRemote > maxChainLength) {
-          maxChainLength = chainLengthRemote;
-          newLongestChain = chainRemote;
-          newPendingTransactions = transactionsRemote;
-        }
-      }
-
-      if(!newLongestChain || (newLongestChain && !blockchain.chainIsValid(newLongestChain))) {
-        res.send({
-          message: 'Current chain has not been replaced',
-          chain: chainLocale
-        });
-      } else if (newLongestChain && blockchain.chainIsValid(newLongestChain)) {
-        blockchain.chain = newLongestChain;
-        blockchain.transactions = newPendingTransactions!;
-
-        res.send({
-          message: 'This chain has been replaced',
-          chain: chainLocale
-        });
-      }
-    } else {
-      res.status(500).send({ '#': 'NOPE', nodes });
+      axiosObservableList.push(from<Promise<AxiosResponse>>(axiosGetPromise));
     }
+
+    axiosObservable$.subscribe((responses: AxiosResponse[]): void => {
+      const responseMapStatus: number[] = responses.map<number>((value: AxiosResponse): number => value.status);
+      const httpStatusCodeOk: number = 200;
+      const equals200: (eq: number) => boolean = equals<number>(httpStatusCodeOk);
+      const receiveNewBlockPostIsValidStatus: boolean = all<number>(equals200)(responseMapStatus);
+
+      if(receiveNewBlockPostIsValidStatus) {
+        const responseMapData: Record<'blockchain', Blockchain<number>>[] = responses.map((value: AxiosResponse) => value.data);
+        const { chain: chainLocale }: Record<'chain', Block<number>[]> = blockchain;
+        const { length: currentChainLengthLocale }: Record<'length', number> = chainLocale;
+        let maxChainLength: number = currentChainLengthLocale;
+        let newLongestChain: Block<number>[] | null = null;
+        let newPendingTransactions: Transaction<number>[] | null = null;
+
+        for (const responseMapDataElement of responseMapData) {
+          const { blockchain: blockchainRemote }: Record<'blockchain', Blockchain<number>> = responseMapDataElement;
+          const { chain: chainRemote }: Record<'chain', Block<number>[]> = blockchainRemote;
+          const { length: chainLengthRemote }: Record<'length', number> = chainRemote;
+          const { transactions: transactionsRemote }: Record<'transactions', Transaction<number>[]> = blockchainRemote;
+
+          if(chainLengthRemote > maxChainLength) {
+            maxChainLength = chainLengthRemote;
+            newLongestChain = chainRemote;
+            newPendingTransactions = transactionsRemote;
+          }
+        }
+
+        if(!newLongestChain || (newLongestChain && !blockchain.chainIsValid(newLongestChain))) {
+          res.send({
+            message: 'Current chain has not been replaced.',
+            chain: chainLocale
+          });
+        } else if (newLongestChain && blockchain.chainIsValid(newLongestChain)) {
+          blockchain.chain = newLongestChain;
+          blockchain.transactions = newPendingTransactions!;
+
+          res.send({
+            message: 'This chain has been replaced.',
+            chain: chainLocale
+          });
+        }
+      } else {
+        res.status(500).send({ message: 'Current chain has not been replaced.', networkNodes });
+      }
+    });
+  } else {
+    res.send({
+      message: 'Current chain has not been replaced. No nodes to sync with available.',
+      networkNode: blockchain.networkNode,
+      networkNodes
+    });
+  }
+});
+
+router.get('/block/:hash', (req: Request, res: Response): void => {
+  const { params }: Record<'params', ParamsDictionary> = req;
+  const hash: string = params.hash;
+  const block: { block: Block<number> | null; index: number | null; } = blockchain.getBlockByHash(hash);
+
+  res.send({
+    note: 'Block:',
+    ...block
+  });
+});
+
+router.get('/transaction/:id', (req: Request, res: Response): void => {
+  const note: string = 'Transaction und Block:';
+  const { params }: Record<'params', ParamsDictionary> = req;
+  const id: string = params.id;
+  const transactionData: { transaction: Transaction<number>; position: number; block: Block<number>; } | { transaction: null; position: null; block: null; } = blockchain.getTransaction(id);
+  const { transaction }: Record<'transaction', Transaction<number> | null> = transactionData;
+  const { block }: Record<'block', Block<number> | null> = transactionData;
+  const { position }: Record<'position', number | null> = transactionData;
+
+  res.send({
+    note, transaction, position, block
+  });
+});
+
+router.get('/address/:address', (req: Request, res: Response): void => {
+  const { params }: Record<'params', ParamsDictionary> = req;
+  const address : string = params.address;
+  const addressData: { transactions: readonly Transaction<number>[]; length: number; balance: number; }= blockchain.getAddressData(address);
+
+  res.send({
+    note: 'Address:',
+    addressData
   });
 });
 

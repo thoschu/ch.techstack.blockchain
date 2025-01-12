@@ -3,8 +3,8 @@ import axios, { AxiosResponse } from 'axios';
 import {
   add, and, clone, dec, equals,
   gt, head, inc,
-  isNotEmpty, last, length,
-  multiply, not, nth, prop,
+  isNotEmpty, last, length, lt,
+  multiply, not, nth, or, prop,
   subtract, toString
 } from 'ramda';
 import { v5 as UUIDv5, v7 as UUIDv7 } from 'uuid';
@@ -94,6 +94,93 @@ export class Blockchain<T> {
   public get contracts(): any {
     return this._contracts;
   }
+
+  public getAddressData(address: string): { transactions: ReadonlyArray<Transaction<T>>; length: number; balance: T} {
+    const startIndex: number = 0;
+    const { chain }: Record<'chain', Block<T>[]> = this;
+    const chainLength: number = length<Block<T>[]>(chain);
+    const addressTransactions: Transaction<T>[] = [];
+    let balance: number = 0;
+
+    for (let i: number = startIndex; lt<number>(i, chainLength); i++) {
+      const block: Block<T> = chain[i];
+      const { transactions }: Record<'transactions', Transaction<T>[]> = block;
+      const transactionsLength: number = length<Transaction<T>[]>(transactions);
+
+      for (let i: number = startIndex; i < transactionsLength; i++) {
+        const transaction: Transaction<T> = transactions[i];
+        const tempTransaction: Transaction<T> = new Transaction<T>('', '', null as T);
+        const tx: Transaction<T> = Object.assign(tempTransaction, transaction);
+        const { sender, receiver }: Record<'sender' | 'receiver', string> = tx;
+
+        if(or<boolean, boolean>(equals<string>(sender, address), equals<string>(receiver, address))) {
+          addressTransactions.push(tx);
+        }
+      }
+    }
+
+    addressTransactions.forEach((transaction: Transaction<T>): void => {
+      const tempTransaction: Transaction<T> = new Transaction<T>('', '', null as T);
+      const tx: Transaction<T> = Object.assign(tempTransaction, transaction);
+      const { sender, receiver, amount }: { sender: string; receiver: string; amount: T; } = tx;
+
+      if( equals<string>(receiver, address)) {
+        balance = add(balance, amount as number);
+      } else if( equals<string>(sender, address)) {
+        balance = subtract(balance, amount as number);
+      }
+    });
+
+    return {
+      transactions: addressTransactions,
+      length: length<Transaction<T>[]>(addressTransactions),
+      balance: balance as T
+    };
+  }
+
+  public getTransaction(id: string): { transaction: Transaction<T>; position: number; block: Block<T>; } | { transaction: null; position: null; block: null; } {
+    const startIndex: number = 0;
+    const { chain }: Record<'chain', Block<T>[]> = this;
+    const chainLength: number = length<Block<T>[]>(chain);
+
+    for (let i: number = startIndex; lt<number>(i, chainLength); i++) {
+      const block: Block<T> = chain[i];
+      const { transactions }: Record<'transactions', Transaction<T>[]> = block;
+      const transactionsLength: number = length<Transaction<T>[]>(transactions);
+
+      for (let i: number = startIndex; i < transactionsLength; i++) {
+        const transaction: Transaction<T> = transactions[i];
+        const tempTransaction: Transaction<T> = new Transaction<T>('', '', null as T);
+        const tx: Transaction<T> = Object.assign(tempTransaction, transaction);
+        const { id: txId }: { id: string } = tx;
+        const position: number = inc(i);
+
+        if(equals<string>(txId, id)) {
+          return {
+            transaction, position, block,
+          }
+        }
+      }
+    }
+
+    return { transaction: null, position: null, block: null };
+  }
+
+  public getBlockByHash(hash: string): { block: Block<T> | null, index: number | null } {
+    for (let i: number = 0; i < length<Block<T>[]>(this.chain); i++) {
+      const block: Block<T> = this.chain[i];
+      const index: number = inc(i);
+      const { hash: blockHash }: Record<'hash', string> = block;
+
+      if (equals(blockHash, hash)) {
+        return {
+          block, index
+        };
+      }
+    }
+
+    return { block: null, index: null };
+  };
 
   public registerSmartContract(name: string, contract: SmartContract<T, unknown>): void {
     this._contracts.set(name, contract);
@@ -296,7 +383,7 @@ export class Blockchain<T> {
 
   private createGenesisBlock(): Block<T> {
     const zero: string = '0';
-    const previousHash: string = zero.repeat(this.difficulty);
+    const previousHash: string = zero.repeat(64);
     const index: number = 1;
     const transactions: Transaction<T>[] = this.transactions;
     const blockData: BlockData<T> = { transactions, index };

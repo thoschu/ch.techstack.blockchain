@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import {all, and, equals, inc, is, isEmpty, length, not, prop} from 'ramda';
+import { all, and, equals, inc, is, isEmpty, length, not, prop } from 'ramda';
 import axios, { AxiosResponse } from 'axios';
 import { forkJoin, from, Observable } from 'rxjs';
 
